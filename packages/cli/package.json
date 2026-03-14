@@ -1,0 +1,24 @@
+{
+  "name": "@magi/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "magi": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@magi/core": "workspace:*",
+    "commander": "^13.1.0",
+    "chalk": "^5.4.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0"
+  }
+}
