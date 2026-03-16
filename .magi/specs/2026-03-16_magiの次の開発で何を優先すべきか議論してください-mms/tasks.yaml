@@ -1,0 +1,196 @@
+```yaml
+tasks:
+  - id: T-001
+    title: "既存MVPの動作確認と回帰テスト基盤構築"
+    description: "現在90%完成のSpecモードMVPの動作確認を行い、新機能追加時の回帰防止テストを自動化する"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "6h"
+    depends_on: []
+    acceptance_criteria:
+      - "現在のSpecモード基本機能の動作確認が完了している"
+      - "回帰テスト自動化スクリプトが実装されている"
+      - "テスト実行時間が5分以内に収まっている"
+
+  - id: T-002
+    title: "ファイル競合対策とセッション状態管理の実装"
+    description: ".magi/sessions/*.jsonでの状態管理における排他制御とファイル競合対策を実装する"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: high
+    estimate: "8h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "flockを使用したファイル排他制御が実装されている"
+      - "複数プロセス同時実行時のデータ整合性が保証されている"
+      - "ディレクトリトラバーサル対策が実装されている"
+
+  - id: T-003
+    title: "LLM APIエラーハンドリング基本実装"
+    description: "LLM API失敗時の基本的なエラー通知とリトライ機能を実装する"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: high
+    estimate: "8h"
+    depends_on: ["T-002"]
+    acceptance_criteria:
+      - "API失敗時に5秒以内にエラー通知が表示される"
+      - "エラー原因別の基本分類ができている"
+      - "3回上限のリトライ機能が実装されている"
+      - "前ラウンドからの再開機能が動作する"
+
+  - id: T-004
+    title: "エラー状態の可視化とユーザー操作UI実装"
+    description: "エラー発生時のユーザーインターフェースと次アクション提示機能を実装する"
+    story_ref: "US-3"
+    assignee: "PD"
+    priority: high
+    estimate: "6h"
+    depends_on: ["T-003"]
+    acceptance_criteria:
+      - "エラー状態が明確に可視化されている"
+      - "ユーザーへの具体的な次アクション提示がある"
+      - "再試行ボタンが適切に配置されている"
+      - "エラーメッセージが分かりやすい表現になっている"
+
+  - id: T-005
+    title: ".magi/discussions/構造解析と読込み機能実装"
+    description: "既存の.magi/discussions/ディレクトリ構造を解析し、過去議論の読込み機能を実装する"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "4h"
+    depends_on: ["T-002"]
+    acceptance_criteria:
+      - "既存ファイル構造の解析が完了している"
+      - "JSONファイルからの議論データ読込みが動作する"
+      - "破損ファイルの検知と処理ができる"
+
+  - id: T-006
+    title: "History画面の基本表示機能実装"
+    description: "過去の議論一覧と詳細表示の最小限機能を実装する"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "6h"
+    depends_on: ["T-005"]
+    acceptance_criteria:
+      - "過去議論の一覧表示ができる"
+      - "選択された議論の詳細表示ができる"
+      - "作成日時と議論ステータスが表示される"
+      - "大量ファイル読込み時のメモリ効率性が確保されている"
+
+  - id: T-007
+    title: "Coming Soon UI実装（既存コンポーネント活用）"
+    description: "Buildモード選択時のComing Soon画面を既存コンポーネントを活用して実装する"
+    story_ref: "US-4"
+    assignee: "PD"
+    priority: medium
+    estimate: "3h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "Buildモード選択時にComing Soon画面が表示される"
+      - "Phase2タイムライン（2026年5月予定）が明記されている"
+      - "機能概要説明が含まれている"
+      - "ベータフィードバック募集メッセージが含まれている"
+
+  - id: T-008
+    title: "議論進行状況の可視化機能実装"
+    description: "ラウンド進捗バーとユーザー介入タイミングの明確化機能を実装する"
+    story_ref: "US-5"
+    assignee: "PD"
+    priority: medium
+    estimate: "4h"
+    depends_on: ["T-003"]
+    acceptance_criteria:
+      - "ラウンド進捗バーが表示されている"
+      - "現在の議論段階が明確に表示されている"
+      - "ユーザー介入可能なタイミングが分かる"
+      - "各ロール（PM/PD/Dev）の発言状況が可視化されている"
+
+  - id: T-009
+    title: "合意判定ロジックの堅牢化"
+    description: "現在の文字列マッチベースの合意判定を正規表現ベースの堅牢な仕組みに改善する"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: medium
+    estimate: "4h"
+    depends_on: ["T-003"]
+    acceptance_criteria:
+      - "正規表現による柔軟なパターンマッチングが実装されている"
+      - "フォールバック判定機能が動作する"
+      - "判定不明時のユーザー確認機能がある"
+      - "表記揺れに対応できている"
+
+  - id: T-010
+    title: "APIエンドポイント実装（discussions管理）"
+    description: "議論開始、状態確認、リトライ、履歴取得のAPIエンドポイントを実装する"
+    story_ref: "US-1,US-2,US-3"
+    assignee: "Dev"
+    priority: medium
+    estimate: "6h"
+    depends_on: ["T-006", "T-003"]
+    acceptance_criteria:
+      - "POST /api/discussions/start が実装されている"
+      - "GET /api/discussions/{taskId}/status が実装されている"
+      - "POST /api/discussions/{taskId}/retry が実装されている"
+      - "GET /api/discussions/history が実装されている"
+      - "GET /api/discussions/{id}/details が実装されている"
+
+  - id: T-011
+    title: "セキュリティ強化（APIキー管理・入力検証）"
+    description: "APIキーの安全な管理と入力データの検証機能を実装する"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: medium
+    estimate: "3h"
+    depends_on: ["T-010"]
+    acceptance_criteria:
+      - "環境変数でのAPIキー管理が実装されている"
+      - "APIキー情報がログに出力されない"
+      - "ユーザー入力のサニタイゼーションが実装されている"
+      - "LLM APIへの送信前コンテンツフィルタリングが動作する"
+
+  - id: T-012
+    title: "統合テストとデバッグ対応"
+    description: "全機能の統合テストを実行し、発見された問題の修正を行う"
+    story_ref: "US-1,US-2,US-3,US-4,US-5"
+    assignee: "Dev"
+    priority: high
+    estimate: "8h"
+    depends_on: ["T-004", "T-006", "T-007", "T-008", "T-009", "T-010", "T-011"]
+    acceptance_criteria:
+      - "全てのユーザーストーリーのE2Eテストが完了している"
+      - "発見されたバグが修正されている"
+      - "パフォーマンステストが実行されている"
+      - "ドキュメントが更新されている"
+
+  - id: T-013
+    title: "リリース準備とデプロイメント手順確立"
+    description: "Phase1リリースのための最終準備とデプロイメント手順を確立する"
+    story_ref: "US-1,US-2,US-3,US-4,US-5"
+    assignee: "PM"
+    priority: high
+    estimate: "4h"
+    depends_on: ["T-012"]
+    acceptance_criteria:
+      - "リリースノートが作成されている"
+      - "インストール手順書が更新されている"
+      - "既知の制限事項が文書化されている"
+      - "Phase2予告とフィードバック収集方法が明記されている"
+
+  - id: T-014
+    title: "ユーザーフィードバック収集基盤構築"
+    description: "Phase1リリース後のフィードバック収集とPhase1.5改善のための基盤を構築する"
+    story_ref: "US-4"
+    assignee: "PM"
+    priority: low
+    estimate: "3h"
+    depends_on: ["T-013"]
+    acceptance_criteria:
+      - "フィードバック収集フォームが設置されている"
+      - "使用状況ログ収集機能が実装されている"
+      - "Phase1.5改善計画が文書化されている"
+      - "ユーザーコミュニケーション計画が策定されている"
+```
