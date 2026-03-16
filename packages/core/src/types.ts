@@ -163,7 +163,9 @@ export interface MagiEvent {
     | "gate"
     | "error"
     | "pause"
-    | "user_message";
+    | "user_message"
+    | "validation_warning"
+    | "context_synced";
   stage?: PipelineStage;
   mode?: PipelineMode;
   data: Record<string, unknown>;

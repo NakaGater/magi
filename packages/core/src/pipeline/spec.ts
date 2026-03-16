@@ -19,6 +19,7 @@ import { SpecWriter } from "../spec/writer.js";
 import { SpecPlanner } from "../spec/planner.js";
 import { ContextLoader } from "../context/loader.js";
 import { ContextReferenceEngine } from "../context/reference.js";
+import { ContextSyncer } from "../context/syncer.js";
 import type { LLMProvider } from "../llm/provider.js";
 
 const SPEC_STAGES: SpecPipelineStage[] = [
@@ -69,8 +70,13 @@ export class SpecPipeline {
     this.logger = logger;
 
     this.discussion = new DiscussionProtocol(roleEngine);
-    this.specWriter = new SpecWriter(llm);
-    this.planner = new SpecPlanner(llm);
+    const emitEvent: import("../types.js").MagiEventHandler = (event) => {
+      for (const handler of this.eventHandlers) {
+        handler(event);
+      }
+    };
+    this.specWriter = new SpecWriter(llm, emitEvent);
+    this.planner = new SpecPlanner(llm, emitEvent);
 
     const workDir = process.cwd();
     this.contextLoader = new ContextLoader(
@@ -116,10 +122,34 @@ export class SpecPipeline {
     // Create discussion dir for logs
     const discussionDir = await this.logger.createDiscussionDir(taskId);
 
+    // Sync context files if code has changed
+    const workDir = process.cwd();
+    const syncer = new ContextSyncer(
+      join(workDir, this.config.contextDir),
+      workDir,
+      this.llm,
+      this.git,
+    );
+    const syncResult = await syncer.syncIfNeeded();
+    if (syncResult.synced) {
+      this.emit({
+        type: "context_synced",
+        mode: "spec",
+        data: {
+          updatedFiles: syncResult.updatedFiles,
+          reason: syncResult.reason,
+          elapsedMs: syncResult.elapsedMs,
+        },
+      });
+    }
+
     // Load context
     const projectContext = await this.contextLoader.buildCombinedContext();
     const referenceContext = await this.referenceEngine.buildReferenceContext(task);
-    const baseContext = [projectContext, referenceContext]
+    const codebaseContext = await this.contextLoader.buildCodebaseContext(
+      process.cwd(),
+    );
+    const baseContext = [projectContext, referenceContext, codebaseContext]
       .filter(Boolean)
       .join("\n\n");
 
@@ -276,6 +306,47 @@ export class SpecPipeline {
           stage,
           mode: "spec",
           data: { type: "tasks", path: tasksPath },
+        });
+
+        // Reconciliation: re-generate artifacts with full discussion context
+        const reconciledReqPath = await this.specWriter.writeRequirements(
+          outputDir,
+          task,
+          discussionAccumulator,
+          adrContents,
+        );
+        requirementsContent = await readFile(reconciledReqPath, "utf-8");
+        artifacts.requirements = requirementsContent;
+
+        const reconciledSpecPath = await this.specWriter.writeSpec(
+          outputDir,
+          task,
+          discussionAccumulator,
+          requirementsContent,
+          adrContents,
+        );
+        specContent = await readFile(reconciledSpecPath, "utf-8");
+        artifacts.spec = specContent;
+
+        const reconciledMermaidPath = await this.specWriter.writeMermaid(
+          outputDir,
+          task,
+          specContent,
+          adrContents,
+        );
+        if (reconciledMermaidPath) {
+          artifacts.mermaid = await readFile(reconciledMermaidPath, "utf-8");
+          artifactPaths.push(reconciledMermaidPath);
+        }
+
+        this.emit({
+          type: "artifact",
+          stage,
+          mode: "spec",
+          data: {
+            type: "reconciled",
+            paths: [reconciledReqPath, reconciledSpecPath],
+          },
         });
       }
 

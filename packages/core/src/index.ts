@@ -8,6 +8,7 @@ export { SpecWriter } from "./spec/writer.js";
 export { SpecPlanner } from "./spec/planner.js";
 export { ContextLoader } from "./context/loader.js";
 export { ContextReferenceEngine } from "./context/reference.js";
+export { ContextSyncer } from "./context/syncer.js";
 export { GitManager } from "./git/manager.js";
 export { DiscussionLogger } from "./logger/writer.js";
 export * from "./types.js";

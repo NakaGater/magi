@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMagiEvents } from "@/lib/use-magi-events";
-import { getEventsUrl, sendMessage } from "@/lib/api";
+import { getEventsUrl, sendMessage, getTaskStatus } from "@/lib/api";
 import { stageLabel } from "@/lib/constants";
 import { StageProgress } from "./StageProgress";
 import { StatementCard } from "./StatementCard";
@@ -20,6 +20,14 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
   const userScrolled = useRef(false);
   const [messageInput, setMessageInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [taskText, setTaskText] = useState("");
+
+  // Fetch task text for banner
+  useEffect(() => {
+    getTaskStatus(taskId)
+      .then((info) => setTaskText(info.task ?? ""))
+      .catch(() => {});
+  }, [taskId]);
 
   // Auto-scroll unless user has scrolled up
   useEffect(() => {
@@ -51,6 +59,14 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
 
   return (
     <div className="space-y-6">
+      {/* Task Banner */}
+      {taskText && (
+        <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
+          <span className="text-xs font-medium text-accent uppercase tracking-wide">課題</span>
+          <p className="text-sm text-text-primary mt-1">{taskText}</p>
+        </div>
+      )}
+
       {/* Status */}
       <div className="flex items-center gap-3">
         <StatusBadge status={state.status} />

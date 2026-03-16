@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/history/page": "/history",
+  "/specs/page": "/specs",
+  "/page": "/",
+  "/discussion/[id]/page": "/discussion/[id]",
+  "/history/[id]/page": "/history/[id]"
+}

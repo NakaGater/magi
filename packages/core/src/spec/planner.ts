@@ -1,13 +1,17 @@
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
-import type { LLMProvider } from "../llm/provider.js";
+import type { LLMProvider, LLMMessage } from "../llm/provider.js";
+import type { MagiEventHandler } from "../types.js";
+import { normalizeYaml, validateTasks, withRetry } from "./validator.js";
 
 export class SpecPlanner {
   private llm: LLMProvider;
+  private eventHandler?: MagiEventHandler;
 
-  constructor(llm: LLMProvider) {
+  constructor(llm: LLMProvider, eventHandler?: MagiEventHandler) {
     this.llm = llm;
+    this.eventHandler = eventHandler;
   }
 
   /** Generate tasks.yaml from spec, requirements, and ADRs */
@@ -67,16 +71,24 @@ tasks:
 - ユーザーストーリーへのトレーサビリティを保つ
 - 優先度と見積りを付ける`;
 
-    const response = await this.llm.chat(
-      "あなたはプロジェクト計画の専門家です。仕様を実装可能なタスクに分割してください。",
-      [{ role: "user", content: prompt }],
+    const systemPrompt =
+      "あなたはプロジェクト計画の専門家です。仕様を実装可能なタスクに分割してください。";
+    const messages: LLMMessage[] = [{ role: "user", content: prompt }];
+
+    const content = await withRetry(
+      this.llm,
+      systemPrompt,
+      messages,
+      normalizeYaml,
+      validateTasks,
+      this.eventHandler,
     );
 
     if (!existsSync(outputDir)) {
       await mkdir(outputDir, { recursive: true });
     }
 
-    await writeFile(filePath, response.content, "utf-8");
+    await writeFile(filePath, content, "utf-8");
     return filePath;
   }
 }

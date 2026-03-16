@@ -21,3 +21,8 @@
 | **activePipeline** | Magiクラスが現在実行中のパイプラインを追跡するフィールド。介入に使用 |
 | **pendingMessages** | DiscussionProtocol内のユーザーメッセージキュー。ラウンド完了後にドレインされる |
 | **AIDLC** | AI Development Life Cycle。MagiのSpecモード=Inception、Buildモード=Construction に対応 |
+| **sanitize** | LLM出力から先頭/末尾のコードフェンス（` ```yaml ` 等）を除去する処理。SpecWriter.sanitize()で実装 |
+| **minRounds** | 合意に達しても最低限実行するラウンド数（デフォルト2）。ラウンド1での安易な早期収束を防止 |
+| **リコンシリエーション** | plan完了後にrequirements.md・spec.md・flow.mermaidを全議論とADR情報を反映して再生成する処理。ADRで延期・却下された技術を除外 |
+| **コードベースコンテキスト** | ContextLoader.buildCodebaseContext()が既存コードからAPIエンドポイント・設定形式・依存関係を自動抽出し議論に提供する情報 |
+| **adrContents** | ADR文書の配列。リコンシリエーション時にwriteRequirements/writeSpec/writeMermaidに渡され、延期・却下された技術を成果物に含めないよう制御 |

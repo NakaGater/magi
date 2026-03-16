@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listTasks, type TaskInfo } from "@/lib/api";
+import { listHistory, type HistoryItem } from "@/lib/api";
+import { stageLabel } from "@/lib/constants";
 
 export default function HistoryPage() {
-  const [tasks, setTasks] = useState<TaskInfo[]>([]);
+  const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listTasks()
-      .then(setTasks)
+    listHistory()
+      .then(setItems)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -36,7 +37,7 @@ export default function HistoryPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-bold">History</h1>
 
-      {tasks.length === 0 ? (
+      {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-text-dim space-y-2">
           <p>まだ議論履歴がありません</p>
           <Link
@@ -48,32 +49,33 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => (
+          {items.map((item) => (
             <Link
-              key={task.id}
-              href={`/discussion/${task.id}`}
+              key={item.id}
+              href={`/history/${item.id}`}
               className="flex items-center gap-4 rounded-lg border border-border bg-surface p-4 hover:bg-surface-2 transition-colors"
             >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate">{item.task}</p>
+                <p className="text-xs text-text-dim mt-1">
+                  {item.startedAt
+                    ? new Date(item.startedAt).toLocaleString("ja-JP")
+                    : "—"}
+                  {" · "}
+                  {item.stages
+                    .filter((s) => s.rounds > 0)
+                    .map((s) => stageLabel(s.name))
+                    .join(" → ")}
+                </p>
+              </div>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  task.mode === "spec"
-                    ? "bg-pm/20 text-pm"
-                    : "bg-dev/20 text-dev"
-                }`}
-              >
-                {task.mode}
-              </span>
-              <p className="flex-1 text-sm truncate">{task.task}</p>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full ${
-                  task.status === "completed"
+                className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                  item.completedAt
                     ? "bg-dev/20 text-dev"
-                    : task.status === "running"
-                      ? "bg-accent/20 text-accent"
-                      : "bg-red-500/20 text-red-400"
+                    : "bg-accent/20 text-accent"
                 }`}
               >
-                {task.status}
+                {item.completedAt ? "completed" : "incomplete"}
               </span>
             </Link>
           ))}

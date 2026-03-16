@@ -132,6 +132,11 @@ export class DiscussionLogger {
       content += `---\n\n`;
       content += `## ${this.stageTitle(stage.stage)}\n\n`;
 
+      if (stage.rounds.length === 0) {
+        content += `_このステージは自動承認されました。_\n\n`;
+        continue;
+      }
+
       for (const round of stage.rounds) {
         content += this.formatRound(round);
       }

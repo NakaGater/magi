@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { readdir, readFile } from "fs/promises";
+import { existsSync } from "fs";
+import { join, resolve } from "path";
+import yaml from "js-yaml";
 import { Magi } from "@magi/core";
 import type { MagiEvent, TaskResult, SpecResult } from "@magi/core";
 
@@ -192,10 +196,100 @@ app.get("/api/tasks", (c) => {
   return c.json(tasks);
 });
 
-// --- History endpoint ---
+// --- History endpoints ---
 
-app.get("/api/history", (c) => {
-  return c.json([]);
+const DISCUSSIONS_DIR = resolve(process.cwd(), ".magi/discussions");
+
+/** Extract the ASCII hash suffix from a directory name (e.g. "2026-...-mmsqsjar" → "mmsqsjar") */
+function extractHashId(dirName: string): string {
+  const m = dirName.match(/-([a-z0-9]+)$/);
+  return m ? m[1] : dirName;
+}
+
+/** Scan discussions directories, returning entries keyed by hash id */
+async function scanDiscussions(): Promise<
+  { hashId: string; dirName: string; metaPath: string }[]
+> {
+  if (!existsSync(DISCUSSIONS_DIR)) return [];
+  const entries = await readdir(DISCUSSIONS_DIR, { withFileTypes: true });
+  const result: { hashId: string; dirName: string; metaPath: string }[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const metaPath = join(DISCUSSIONS_DIR, entry.name, "meta.yaml");
+    if (!existsSync(metaPath)) continue;
+    result.push({
+      hashId: extractHashId(entry.name),
+      dirName: entry.name,
+      metaPath,
+    });
+  }
+  return result;
+}
+
+app.get("/api/history", async (c) => {
+  const discussions = await scanDiscussions();
+  const items: any[] = [];
+
+  for (const d of discussions) {
+    try {
+      const raw = await readFile(d.metaPath, "utf-8");
+      const meta = yaml.load(raw) as any;
+      items.push({
+        id: d.hashId,
+        task: meta.task ?? "",
+        startedAt: meta.started_at ?? "",
+        completedAt: meta.completed_at ?? "",
+        stages: meta.stages ?? [],
+      });
+    } catch {
+      // skip unparseable entries
+    }
+  }
+
+  items.sort((a, b) => (b.startedAt > a.startedAt ? 1 : -1));
+  return c.json(items);
+});
+
+app.get("/api/history/:id", async (c) => {
+  const id = c.req.param("id");
+  const discussions = await scanDiscussions();
+  const found = discussions.find((d) => d.hashId === id);
+
+  if (!found) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  const dirPath = join(DISCUSSIONS_DIR, found.dirName);
+  const metaRaw = await readFile(found.metaPath, "utf-8");
+  const meta = yaml.load(metaRaw) as any;
+
+  let summary = "";
+  const summaryPath = join(dirPath, "summary.md");
+  if (existsSync(summaryPath)) {
+    summary = await readFile(summaryPath, "utf-8");
+  }
+
+  const files = await readdir(dirPath);
+  const stageFiles = files
+    .filter((f) => /^\d{2}-\w+\.md$/.test(f))
+    .sort();
+
+  const stageLogs: { stage: string; content: string }[] = [];
+  for (const f of stageFiles) {
+    const stage = f.replace(/^\d{2}-/, "").replace(/\.md$/, "");
+    const content = await readFile(join(dirPath, f), "utf-8");
+    stageLogs.push({ stage, content });
+  }
+
+  return c.json({
+    id,
+    task: meta.task ?? "",
+    startedAt: meta.started_at ?? "",
+    completedAt: meta.completed_at ?? "",
+    stages: meta.stages ?? [],
+    summary,
+    stageLogs,
+  });
 });
 
 // --- Helpers ---

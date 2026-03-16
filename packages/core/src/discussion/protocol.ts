@@ -13,6 +13,7 @@ export interface DiscussionOptions {
   context: string;
   stage: PipelineStage;
   maxRounds: number;
+  minRounds?: number;
 }
 
 export interface DiscussionResult {
@@ -52,7 +53,7 @@ export class DiscussionProtocol {
 
   /** Run a full discussion with multiple rounds until consensus or maxRounds */
   async discuss(options: DiscussionOptions): Promise<DiscussionResult> {
-    const { topic, context, stage, maxRounds } = options;
+    const { topic, context, stage, maxRounds, minRounds } = options;
     const rounds: RoundResult[] = [];
     const allStatements: Statement[] = [];
 
@@ -113,8 +114,8 @@ export class DiscussionProtocol {
         data: { round, consensus: roundResult.consensus },
       });
 
-      // If all roles agree, stop early
-      if (roundResult.consensus === "agreed") {
+      // If all roles agree and minimum rounds reached, stop early
+      if (roundResult.consensus === "agreed" && round >= (minRounds ?? 2)) {
         break;
       }
     }

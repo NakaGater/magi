@@ -71,6 +71,25 @@ export class GitManager {
     return log.latest?.hash.substring(0, 7) ?? "";
   }
 
+  /** Get the full hash of HEAD */
+  async getHeadHashFull(): Promise<string> {
+    const log = await this.git.log({ maxCount: 1 });
+    return log.latest?.hash ?? "";
+  }
+
+  /** Get diff stat between two commits */
+  async getDiffFiles(fromHash: string, toHash: string): Promise<string[]> {
+    try {
+      const result = await this.git.diff(["--name-only", fromHash, toHash]);
+      return result
+        .split("\n")
+        .map((f) => f.trim())
+        .filter((f) => f.length > 0);
+    } catch {
+      return [];
+    }
+  }
+
   /** Get log entries */
   async getLog(
     count: number = 10,

@@ -1,15 +1,162 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
+import { spawn, type ChildProcess } from "child_process";
+import { existsSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { Magi } from "@magi/core";
 import type { MagiEvent, MagiConfig } from "@magi/core";
 
 const program = new Command();
 
+// Default to "start" when no arguments given
+if (process.argv.length === 2) {
+  process.argv.push("start");
+}
+
 program
   .name("magi")
   .description("3人の賢者が議論し、成果物を生み出す")
   .version("0.1.0");
+
+// --- Start command ---
+program
+  .command("start")
+  .description("サーバーとWeb UIを起動")
+  .option("--port <n>", "サーバーポート", "3400")
+  .option("--web-port <n>", "Web UIポート", "3000")
+  .option("--dev", "開発モードで起動")
+  .option("--no-open", "ブラウザを自動で開かない")
+  .action(async (options) => {
+    const serverPort = options.port;
+    const webPort = options.webPort;
+    const isDev = options.dev ?? false;
+    const shouldOpen = options.open !== false;
+
+    // Resolve paths
+    const cliDir = typeof __dirname !== "undefined"
+      ? __dirname
+      : dirname(fileURLToPath(import.meta.url));
+    const repoRoot = resolve(cliDir, "..", "..", "..");
+    const serverDist = resolve(repoRoot, "packages", "server", "dist", "index.js");
+
+    const webNextDir = resolve(repoRoot, "packages", "web", ".next");
+
+    if (!isDev && !existsSync(serverDist)) {
+      console.error(chalk.red("Server not built. Run: pnpm build"));
+      process.exit(1);
+    }
+    if (!isDev && !existsSync(webNextDir)) {
+      console.error(chalk.red("Web UI not built. Run: pnpm build"));
+      process.exit(1);
+    }
+
+    //  M(11) + gap(5) + A(8) + gap(5) + G(9) + gap(5) + I(3) = 46
+    const g = (hex: string, text: string) => chalk.hex(hex)(text);
+    const banner = [
+      "",
+      g("#6C63FF", "  ███╗   ███╗      █████╗       ██████╗      ██╗"),
+      g("#7073FF", "  ████╗ ████║     ██╔══██╗     ██╔════╝      ██║"),
+      g("#7F7AFF", "  ██╔████╔██║     ███████║     ██║  ███╗     ██║"),
+      g("#9993FF", "  ██║╚██╔╝██║     ██╔══██║     ██║   ██║     ██║"),
+      g("#A8A3FF", "  ██║ ╚═╝ ██║     ██║  ██║     ╚██████╔╝     ██║"),
+      g("#B7B3FF", "  ╚═╝     ╚═╝     ╚═╝  ╚═╝      ╚═════╝      ╚═╝"),
+      "",
+      chalk.dim("  Three Wise Agents, One Decision              v0.1.0"),
+      "",
+      chalk.dim("  ──────────────────────────────────────────────────"),
+      `  ${g("#8A83FF", "Server")}   ${chalk.white(`http://localhost:${serverPort}`)}`,
+      `  ${g("#8A83FF", "Web UI")}   ${chalk.white(`http://localhost:${webPort}`)}`,
+      `  ${g("#8A83FF", "Mode")}     ${chalk.white(isDev ? "development" : "production")}`,
+      chalk.dim("  ──────────────────────────────────────────────────"),
+      "",
+    ];
+    console.log(banner.join("\n"));
+
+    const children: ChildProcess[] = [];
+
+    // Start server
+    const serverChild = isDev
+      ? spawn("pnpm", ["--filter", "@magi/server", "run", "dev"], {
+          cwd: repoRoot,
+          env: { ...process.env, PORT: serverPort },
+          stdio: ["ignore", "pipe", "pipe"],
+        })
+      : spawn("node", [serverDist], {
+          cwd: repoRoot,
+          env: { ...process.env, PORT: serverPort },
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+
+    children.push(serverChild);
+
+    // Noise patterns to suppress from child output
+    const suppressPatterns = [
+      /^>\s/,                    // pnpm script echo ("> next start")
+      /^@magi\//,               // pnpm package prefix
+      /ExperimentalWarning/,
+      /^\s*$/,                   // blank lines
+      /^▲\s*Next/,              // Next.js version banner
+      /^-\s*(Local|Network):/,  // Next.js URL info (already in our banner)
+      /^✓\s*Starting\.\.\./,   // Next.js "Starting..."
+    ];
+
+    const shouldSuppress = (line: string) =>
+      suppressPatterns.some((p) => p.test(line));
+
+    const formatLog = (prefix: string, color: typeof chalk.blue, data: Buffer) => {
+      for (const raw of data.toString().split("\n")) {
+        const line = raw.trim();
+        if (!line || shouldSuppress(line)) continue;
+        console.log(`  ${color(prefix)}  ${chalk.dim(line)}`);
+      }
+    };
+
+    serverChild.stdout?.on("data", (data: Buffer) => formatLog("server", chalk.blue, data));
+    serverChild.stderr?.on("data", (data: Buffer) => formatLog("server", chalk.red, data));
+
+    // Start web UI
+    const webCommand = isDev ? "dev" : "start";
+    const webChild = spawn("pnpm", ["--filter", "@magi/web", "run", webCommand], {
+      cwd: repoRoot,
+      env: { ...process.env, PORT: webPort, NEXT_PUBLIC_MAGI_SERVER: `http://localhost:${serverPort}` },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    children.push(webChild);
+
+    webChild.stdout?.on("data", (data: Buffer) => formatLog("web   ", chalk.green, data));
+    webChild.stderr?.on("data", (data: Buffer) => formatLog("web   ", chalk.red, data));
+
+    // Open browser after a short delay
+    if (shouldOpen) {
+      setTimeout(() => {
+        const url = `http://localhost:${webPort}`;
+        spawn("open", [url], { stdio: "ignore" }).unref();
+      }, 3000);
+    }
+
+    // Graceful shutdown
+    const shutdown = () => {
+      console.log(chalk.dim("\nMagi をシャットダウン中..."));
+      for (const child of children) {
+        child.kill("SIGTERM");
+      }
+      setTimeout(() => process.exit(0), 2000);
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+
+    // Wait for children to exit
+    await Promise.all(
+      children.map(
+        (child) =>
+          new Promise<void>((res) => {
+            child.on("exit", () => res());
+          }),
+      ),
+    );
+  });
 
 // --- Spec command ---
 program
@@ -267,6 +414,18 @@ function setupEventHandler(magi: Magi): void {
       case "error":
         console.log(
           chalk.red(`\n❌ エラー: ${event.data.message}`),
+        );
+        break;
+
+      case "validation_warning":
+        console.log(
+          chalk.yellow(`\n⚠ バリデーション警告: ${event.data.message}`),
+        );
+        break;
+
+      case "context_synced":
+        console.log(
+          chalk.blue(`\n🔄 コンテキスト同期: ${event.data.updatedFiles ?? "完了"}`),
         );
         break;
     }

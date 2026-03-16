@@ -39,6 +39,7 @@
 - 左ボーダーにロールカラー
 - ロールアイコン + ラベル
 - コンテンツは `whitespace-pre-wrap` で表示
+- Markdown記法（`##`, `**`, `` ` ``, `- ` 等）を `text-text-dim` で薄色表示（`dimMarkdown()` ユーティリティ使用）
 
 ### StageProgress
 - 水平パイプライン表示

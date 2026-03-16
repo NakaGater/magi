@@ -2,12 +2,30 @@ import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
 import type { LLMProvider, LLMMessage } from "../llm/provider.js";
+import type { MagiEventHandler } from "../types.js";
+import {
+  normalizeMarkdown,
+  validateRequirements,
+  validateSpec,
+  validateADR,
+  withRetry,
+} from "./validator.js";
 
 export class SpecWriter {
   private llm: LLMProvider;
+  private eventHandler?: MagiEventHandler;
 
-  constructor(llm: LLMProvider) {
+  constructor(llm: LLMProvider, eventHandler?: MagiEventHandler) {
     this.llm = llm;
+    this.eventHandler = eventHandler;
+  }
+
+  /** Strip leading/trailing code fences from LLM output */
+  static sanitize(content: string): string {
+    let text = content.trim();
+    text = text.replace(/^```[\w-]*\s*\n/, "");
+    text = text.replace(/\n\s*```\s*$/, "");
+    return text.trim();
   }
 
   /** Generate requirements.md from elaboration discussion */
@@ -15,8 +33,14 @@ export class SpecWriter {
     outputDir: string,
     task: string,
     discussionContent: string,
+    adrContents: string[] = [],
   ): Promise<string> {
     const filePath = join(outputDir, "requirements.md");
+
+    let adrSection = "";
+    if (adrContents.length > 0) {
+      adrSection = `\n\n## ADR（設計判断）\n以下のADRで延期・却下された技術や機能は、要件（特に非機能要件）に含めないでください:\n${adrContents.join("\n\n---\n\n")}`;
+    }
 
     const prompt = `以下の議論に基づいて、要件定義書（requirements.md）を生成してください。
 
@@ -24,7 +48,7 @@ export class SpecWriter {
 ${task}
 
 ## 議論内容
-${discussionContent}
+${discussionContent}${adrSection}
 
 ## 出力形式
 以下のフォーマットで出力してください（Markdownのみ、説明不要）:
@@ -52,13 +76,21 @@ ${discussionContent}
 ## 前提条件
 - [前提]`;
 
-    const response = await this.llm.chat(
-      "あなたは要件定義の専門家です。議論の内容を正確に要件定義書にまとめてください。",
-      [{ role: "user", content: prompt }],
+    const systemPrompt =
+      "あなたは要件定義の専門家です。議論の内容を正確に要件定義書にまとめてください。";
+    const messages: LLMMessage[] = [{ role: "user", content: prompt }];
+
+    const content = await withRetry(
+      this.llm,
+      systemPrompt,
+      messages,
+      normalizeMarkdown,
+      validateRequirements,
+      this.eventHandler,
     );
 
     await this.ensureDir(outputDir);
-    await writeFile(filePath, response.content, "utf-8");
+    await writeFile(filePath, content, "utf-8");
     return filePath;
   }
 
@@ -68,8 +100,14 @@ ${discussionContent}
     task: string,
     discussionContent: string,
     requirements: string,
+    adrContents: string[] = [],
   ): Promise<string> {
     const filePath = join(outputDir, "spec.md");
+
+    let adrSection = "";
+    if (adrContents.length > 0) {
+      adrSection = `\n\n## ADR（設計判断）\n以下のADRの決定事項を仕様に正確に反映してください。延期・却下された技術や機能は仕様に含めないでください:\n${adrContents.join("\n\n---\n\n")}`;
+    }
 
     const prompt = `以下の議論と要件に基づいて、機能仕様書（spec.md）を生成してください。
 
@@ -80,7 +118,7 @@ ${task}
 ${requirements}
 
 ## 議論内容
-${discussionContent}
+${discussionContent}${adrSection}
 
 ## 出力形式
 以下のフォーマットで出力してください（Markdownのみ、説明不要）:
@@ -111,13 +149,21 @@ ${discussionContent}
 ## セキュリティ考慮
 [セキュリティ要件]`;
 
-    const response = await this.llm.chat(
-      "あなたは機能仕様書の専門家です。議論と要件の内容を正確に仕様書にまとめてください。",
-      [{ role: "user", content: prompt }],
+    const systemPrompt =
+      "あなたは機能仕様書の専門家です。議論と要件の内容を正確に仕様書にまとめてください。";
+    const messages: LLMMessage[] = [{ role: "user", content: prompt }];
+
+    const content = await withRetry(
+      this.llm,
+      systemPrompt,
+      messages,
+      normalizeMarkdown,
+      validateSpec,
+      this.eventHandler,
     );
 
     await this.ensureDir(outputDir);
-    await writeFile(filePath, response.content, "utf-8");
+    await writeFile(filePath, content, "utf-8");
     return filePath;
   }
 
@@ -159,13 +205,22 @@ ${discussionContent}
 ## 影響
 [この決定がもたらす影響]`;
 
-    const response = await this.llm.chat(
-      "あなたはソフトウェアアーキテクトです。設計判断を正確にADRとして記録してください。",
-      [{ role: "user", content: prompt }],
+    const systemPrompt =
+      "あなたはソフトウェアアーキテクトです。設計判断を正確にADRとして記録してください。";
+    const messages: LLMMessage[] = [{ role: "user", content: prompt }];
+
+    // Use withRetry for the combined ADR output, then split
+    const fullContent = await withRetry(
+      this.llm,
+      systemPrompt,
+      messages,
+      normalizeMarkdown,
+      validateADR,
+      this.eventHandler,
     );
 
     // Split multiple ADRs
-    const adrTexts = response.content
+    const adrTexts = fullContent
       .split(/^---$/m)
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
@@ -187,7 +242,7 @@ ${discussionContent}
 
       const filename = `adr-${num}-${slug}.md`;
       const filePath = join(outputDir, filename);
-      await writeFile(filePath, adrTexts[i], "utf-8");
+      await writeFile(filePath, normalizeMarkdown(adrTexts[i]), "utf-8");
       filePaths.push(filePath);
     }
 
@@ -199,19 +254,26 @@ ${discussionContent}
     outputDir: string,
     task: string,
     specContent: string,
+    adrContents: string[] = [],
   ): Promise<string | null> {
+    let adrSection = "";
+    if (adrContents.length > 0) {
+      adrSection = `\n\n## ADR（設計判断）\n以下のADRで延期・却下された機能はダイアグラムに含めないでください:\n${adrContents.join("\n\n---\n\n")}`;
+    }
+
     const prompt = `以下の仕様に基づいて、ユーザーフローまたは画面遷移のMermaidダイアグラムを生成してください。
 
 ## 課題
 ${task}
 
 ## 仕様
-${specContent}
+${specContent}${adrSection}
 
 ## 指示
 - UI/UXに関する仕様がある場合のみMermaid図を生成してください
 - UI/UX仕様がない場合は「NO_DIAGRAM」とだけ出力してください
 - Mermaidコードのみを出力してください（コードフェンスなし）
+- ADRで延期・却下された機能は含めないこと
 
 例:
 graph TD
@@ -231,7 +293,7 @@ graph TD
 
     const filePath = join(outputDir, "flow.mermaid");
     await this.ensureDir(outputDir);
-    await writeFile(filePath, response.content.trim(), "utf-8");
+    await writeFile(filePath, SpecWriter.sanitize(response.content), "utf-8");
     return filePath;
   }
 

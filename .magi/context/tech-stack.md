@@ -13,6 +13,9 @@ magi/
 │   └── cli/      # CLIクライアント（Commander.js, chalk, ora）
 ├── roles/        # ロール定義YAML（pm.yaml, pd.yaml, dev.yaml）
 └── .magi/        # 議論ログ・仕様・コンテキスト
+    ├── context/      # 永続コンテキスト（product.md, tech-stack.md等）
+    ├── discussions/  # 議論ログ（meta.yaml, summary.md, ステージログ）
+    └── specs/        # 生成成果物（requirements.md, spec.md, ADR, tasks.yaml, flow.mermaid）
 ```
 
 ## 技術選定
@@ -31,22 +34,23 @@ magi/
 
 ```
 packages/core/src/
+├── index.ts              # エクスポートバレル
 ├── types.ts              # 全型定義 + DEFAULT_CONFIG
 ├── magi.ts               # Magiファサードクラス
 ├── llm/provider.ts       # Anthropic SDK ラッパー
-├── roles/engine.ts       # ロール読込 + ラウンド実行 + 合意判定
-├── discussion/protocol.ts # 議論ループ + ユーザー介入キュー
+├── roles/engine.ts       # ロール読込 + ラウンド実行 + 合意判定（✅/❌/⚠️マーカー）
+├── discussion/protocol.ts # 議論ループ + ユーザー介入キュー + minRounds制御
 ├── pipeline/
-│   ├── spec.ts           # Specパイプライン (elaborate→specify→decide→plan→sync)
+│   ├── spec.ts           # Specパイプライン + 成果物リコンシリエーション + ADR注入
 │   └── runner.ts         # Buildパイプライン (analysis→design→implement→review→verify)
 ├── spec/
-│   ├── writer.ts         # 仕様書・ADR・Mermaid生成（LLM使用）
-│   └── planner.ts        # タスクリスト生成（LLM使用）
+│   ├── writer.ts         # 仕様書・ADR・Mermaid生成 + sanitize() + ADR除外制御
+│   └── planner.ts        # タスクリスト生成（LLM使用、sanitize適用）
 ├── context/
-│   ├── loader.ts         # .magi/context/ からMD読込
+│   ├── loader.ts         # .magi/context/ 読込 + buildCodebaseContext()
 │   └── reference.ts      # 過去議論のキーワードマッチ参照
 ├── git/manager.ts        # Git操作（commit, branch, push）
-└── logger/writer.ts      # 議論ログのMarkdown生成
+└── logger/writer.ts      # 議論ログのMarkdown生成（空ラウンド対応）
 ```
 
 ## サーバーアーキテクチャ
@@ -65,18 +69,36 @@ packages/core/src/
 - バックエンドSSEに直接接続（Next.js rewriteはSSEをバッファするため回避）
 - Tailwind v4 でダークテーマ
 - コンポーネント: TaskForm, DiscussionLive, StageProgress, StatementCard, ConsensusMarker, Header
+- 議論内容はMarkdown記法を薄色表示（`markdown-dim.tsx` の `dimMarkdown()` で正規表現検出→`text-text-dim`スパン化）。フルHTMLレンダリングは不使用
 
 ## データフロー
 
 ```
 ユーザー → Web UI / CLI → Server (Hono)
   → Magi.spec() or Magi.build()
-    → DiscussionProtocol.discuss()
+    → ContextLoader.buildCombinedContext() + buildCodebaseContext()
+    → DiscussionProtocol.discuss({ minRounds: 2 })
       → RoleEngine.runRound() × maxRounds
         → LLMProvider.chat() (Anthropic API)
-    → SpecWriter / SpecPlanner (成果物生成)
+      → evaluateConsensus() (✅/❌/⚠️ マーカー判定)
+    → SpecWriter / SpecPlanner (成果物生成、sanitize適用)
+    → 成果物リコンシリエーション (plan完了後にreq/spec/mermaidをADR情報付きで再生成)
     → GitManager.commit() (自動コミット)
     → MagiEvent emit → SSE broadcast → Web UI更新
+```
+
+## 成果物生成フロー（SpecWriter）
+
+```
+elaborate → writeRequirements(task, discussion)         → requirements.md
+specify  → writeSpec(task, discussion, requirements)    → spec.md
+         → writeMermaid(task, spec)                     → flow.mermaid
+decide   → writeADR(discussion)                         → adr-NNN-*.md
+plan     → writeTasks(task, req, spec, adr, discussion) → tasks.yaml
+         → [リコンシリエーション]
+           → writeRequirements(task, allDiscussion, adrContents) → requirements.md（上書き）
+           → writeSpec(task, allDiscussion, req, adrContents)    → spec.md（上書き）
+           → writeMermaid(task, spec, adrContents)               → flow.mermaid（上書き）
 ```
 
 ## 規約

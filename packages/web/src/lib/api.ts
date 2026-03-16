@@ -70,3 +70,35 @@ export function getEventsUrl(id: string): string {
   const prefix = id.startsWith("spec-") ? "spec" : "tasks";
   return `${MAGI_SERVER}/api/${prefix}/${id}/events`;
 }
+
+// --- History (disk-based past discussions) ---
+
+export interface HistoryItem {
+  id: string;
+  task: string;
+  startedAt: string;
+  completedAt: string;
+  stages: { name: string; rounds: number; commits: number }[];
+}
+
+export interface HistoryDetail {
+  id: string;
+  task: string;
+  startedAt: string;
+  completedAt: string;
+  stages: { name: string; rounds: number; commits: number }[];
+  summary: string;
+  stageLogs: { stage: string; content: string }[];
+}
+
+export async function listHistory(): Promise<HistoryItem[]> {
+  const res = await fetch("/api/history");
+  if (!res.ok) throw new Error(`Failed to list history: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getHistoryDetail(id: string): Promise<HistoryDetail> {
+  const res = await fetch(`/api/history/${id}`);
+  if (!res.ok) throw new Error(`Failed to get history detail: ${res.statusText}`);
+  return res.json();
+}

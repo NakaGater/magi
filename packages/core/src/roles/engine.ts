@@ -4,6 +4,7 @@ import { join, resolve } from "path";
 import yaml from "js-yaml";
 import type { RoleDefinition, Statement, RoundResult, ConsensusStatus } from "../types.js";
 import type { LLMProvider, LLMMessage } from "../llm/provider.js";
+import { normalizeStatement } from "../spec/validator.js";
 
 export class RoleEngine {
   private roles: Map<string, RoleDefinition> = new Map();
@@ -66,7 +67,7 @@ export class RoleEngine {
 
       statements.push({
         role: role.name,
-        content: response.content,
+        content: normalizeStatement(role.name, response.content),
         timestamp: new Date(),
         round: roundNumber,
       });
@@ -127,13 +128,15 @@ export class RoleEngine {
 
   /** Evaluate consensus by checking for agreement markers */
   evaluateConsensus(statements: Statement[]): ConsensusStatus {
-    const agreementCount = statements.filter((s) =>
-      s.content.includes("✅ 合意"),
-    ).length;
-    const totalRoles = statements.length;
+    let agreeCount = 0;
+    for (const s of statements) {
+      if (/❌\s*却下/.test(s.content)) continue;
+      if (/⚠️\s*懸念/.test(s.content) && !/✅\s*合意/.test(s.content)) continue;
+      if (/✅\s*合意/.test(s.content)) agreeCount++;
+    }
 
-    if (agreementCount === totalRoles) return "agreed";
-    if (agreementCount > 0) return "partial";
+    if (agreeCount === statements.length) return "agreed";
+    if (agreeCount > 0) return "partial";
     return "disagreed";
   }
 

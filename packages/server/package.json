@@ -12,9 +12,11 @@
   "dependencies": {
     "@magi/core": "workspace:*",
     "hono": "^4.7.0",
-    "@hono/node-server": "^1.14.0"
+    "@hono/node-server": "^1.14.0",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "tsup": "^8.4.0",
     "typescript": "^5.7.0"
