@@ -1,0 +1,201 @@
+```yaml
+tasks:
+  # Phase 1: 現状把握・データ収集（Day 1-3）
+  - id: T-001
+    title: "既存GA4データによる離脱ポイント特定"
+    description: "Google Analytics 4の標準レポートから、離脱率の異常値とエラー頻発ページを特定する"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: high
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "離脱率50%以上のページ上位5つが特定されている"
+      - "エラー率5%以上の機能が特定されている"
+      - "ユーザー行動フローの主要ボトルネックが明確化されている"
+
+  - id: T-002
+    title: "Chrome DevToolsによるパフォーマンス問題調査"
+    description: "Core Web Vitalsの実測値確認とパフォーマンスボトルネック特定"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: high
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "LCP、FID、CLSの現在値が測定されている"
+      - "パフォーマンス改善余地のある画像・CSS・JSファイルが特定されている"
+      - "修正可能な問題の工数見積りが完了している"
+
+  - id: T-003
+    title: "リモートユーザビリティテストの設計・準備"
+    description: "3名のユーザビリティテスト実施のためのタスク設計と準備"
+    story_ref: "US-2"
+    assignee: "PD"
+    priority: high
+    estimate: "3h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "主要機能を網羅したテストタスク（5-7個）が設計されている"
+      - "参加者3名の確保と日程調整が完了している"
+      - "Zoom録画環境とテスト進行手順が準備されている"
+
+  - id: T-004
+    title: "ユーザビリティテスト実施（3名）"
+    description: "画面共有によるリモートユーザビリティテストの実施と録画"
+    story_ref: "US-2"
+    assignee: "PD"
+    priority: high
+    estimate: "4h"
+    depends_on: ["T-003"]
+    acceptance_criteria:
+      - "3名のテスト参加者全員のセッションが録画されている"
+      - "各タスクの完了率とかかった時間が記録されている"
+      - "参加者のコメント・フィードバックが整理されている"
+
+  - id: T-005
+    title: "Lighthouseアクセシビリティ監査実施"
+    description: "自動ツールによる基本的なアクセシビリティ問題の特定"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: medium
+    estimate: "1h"
+    depends_on: []
+    acceptance_criteria:
+      - "Lighthouse監査で90点以上のアクセシビリティスコア達成状況確認"
+      - "WCAG基本項目（alt属性、コントラスト、キーボード操作）の問題特定"
+      - "即座に修正可能な問題リストが作成されている"
+
+  # Phase 2: 課題分析・優先順位付け（Day 4-5）
+  - id: T-006
+    title: "定量・定性データの統合分析"
+    description: "GA4データとユーザビリティテスト結果を統合して真の課題を特定"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: high
+    estimate: "3h"
+    depends_on: ["T-001", "T-004"]
+    acceptance_criteria:
+      - "データで見えた問題とユーザーテストで発見した問題の関連性が整理されている"
+      - "ビジネスインパクト（売上・ユーザー数への影響）が算出されている"
+      - "課題カテゴリ（UI/UX、パフォーマンス、機能）別に分類されている"
+
+  - id: T-007
+    title: "課題の優先順位付けマトリクス作成"
+    description: "ビジネスインパクト×実装コストのマトリクスで課題優先順位を決定"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: high
+    estimate: "2h"
+    depends_on: ["T-006", "T-002", "T-005"]
+    acceptance_criteria:
+      - "上位10の課題にビジネスインパクト・実装コスト・技術的実現性のスコア付与完了"
+      - "3週間以内に実装可能な課題上位5つが特定されている"
+      - "各課題の期待ROIが算出されている"
+
+  # Phase 3: 即座に実装可能な改善着手（Week 2-3）
+  - id: T-008
+    title: "画像最適化によるLCP改善実装"
+    description: "WebP変換とlazy loadingによるページ読み込み速度改善"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: high
+    estimate: "8h"
+    depends_on: ["T-007"]
+    acceptance_criteria:
+      - "主要画像のWebP変換が完了している"
+      - "Above the fold以外の画像にlazy loading実装済み"
+      - "LCP値が20%以上改善されている"
+
+  - id: T-009
+    title: "Critical CSS最適化実装"
+    description: "Above the foldのCSS最適化でレンダリング速度改善"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: high
+    estimate: "6h"
+    depends_on: ["T-007"]
+    acceptance_criteria:
+      - "Critical CSSのインライン化が実装されている"
+      - "非Critical CSSの遅延読み込みが実装されている"
+      - "FCP値が15%以上改善されている"
+
+  - id: T-010
+    title: "ユーザビリティテストで特定されたUI改善実装"
+    description: "テストで発見されたナビゲーションやフォームのUI問題修正"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "12h"
+    depends_on: ["T-007"]
+    acceptance_criteria:
+      - "タスク完了率が低かった機能のUI改善が実装されている"
+      - "ユーザーのフィードバックで指摘された操作性問題が修正されている"
+      - "フォームバリデーションのUX改善が実装されている"
+
+  - id: T-011
+    title: "基本的なアクセシビリティ問題修正"
+    description: "Lighthouse監査で特定されたアクセシビリティ問題の修正実装"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: medium
+    estimate: "4h"
+    depends_on: ["T-005", "T-007"]
+    acceptance_criteria:
+      - "alt属性の不足が修正されている"
+      - "色のコントラスト不足が解消されている"
+      - "キーボード操作で到達不能な要素が修正されている"
+
+  - id: T-012
+    title: "JSバンドル分割によるパフォーマンス改善"
+    description: "JavaScript読み込み最適化でページ応答性向上"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: medium
+    estimate: "6h"
+    depends_on: ["T-007"]
+    acceptance_criteria:
+      - "Code splittingによるバンドルサイズ削減が実装されている"
+      - "動的importによる遅延読み込みが実装されている"
+      - "FID値が10%以上改善されている"
+
+  # Phase 4: 効果測定・評価（Week 3後半）
+  - id: T-013
+    title: "改善効果の測定・検証"
+    description: "実装した改善の効果をパフォーマンス指標とユーザー行動で測定"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: high
+    estimate: "3h"
+    depends_on: ["T-008", "T-009", "T-010"]
+    acceptance_criteria:
+      - "Core Web Vitalsの改善値が測定されている"
+      - "改善実装後の離脱率変化が確認されている"
+      - "改善ROIの実測値が算出されている"
+
+  - id: T-014
+    title: "追加改善計画の策定"
+    description: "3週間で実装できなかった課題の中長期改善計画作成"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: medium
+    estimate: "2h"
+    depends_on: ["T-013"]
+    acceptance_criteria:
+      - "次の3ヶ月で取り組むべき改善項目上位5つが決定されている"
+      - "各改善項目の実装スケジュールとリソース計画が策定されている"
+      - "継続的な効果測定の仕組みが設計されている"
+
+  - id: T-015
+    title: "改善結果レポートの作成"
+    description: "3週間の改善プロジェクト結果を経営陣向けにまとめたレポート作成"
+    story_ref: "US-1"
+    assignee: "PM"
+    priority: medium
+    estimate: "2h"
+    depends_on: ["T-013", "T-014"]
+    acceptance_criteria:
+      - "実施した改善内容とビジネス効果が定量的に報告されている"
+      - "投資対効果（ROI）が明確に示されている"
+      - "今後の改善投資判断のための提言が含まれている"
+```
