@@ -1,0 +1,23 @@
+# Magi — 用語集
+
+| 用語 | 説明 |
+|---|---|
+| **Magi** | 本プロダクト。3つのAIロールが議論し成果物を生み出すシステム |
+| **3賢者** | PM・PD・Devの3つのAIロール。東方三博士になぞらえた呼称 |
+| **Specモード** | 仕様駆動モード。議論→仕様書+ADR+タスクリスト生成 |
+| **Buildモード** | 実装駆動モード。議論→実装→レビュー→検証 |
+| **ステージ** | パイプラインの各フェーズ。Specは5段階(elaborate→sync)、Buildも5段階(analysis→verify) |
+| **ラウンド** | 1ステージ内での議論の1周。各ロールが1回ずつ発言する。最大3ラウンド（設定可能） |
+| **合意(Consensus)** | ラウンド終了時の合意状況。agreed/partial/disagreed の3段階 |
+| **ADR** | Architecture Decision Record。設計判断の記録。採用理由と却下した代替案を記載 |
+| **ゲート** | ステージ間の承認ポイント。人間が成果物を確認してから次へ進む |
+| **介入(Injection)** | ユーザーが議論の途中にメッセージを挿入する機能。次ラウンドで3賢者に見える |
+| **コンテキスト** | .magi/context/ に配置するプロジェクト情報。議論開始時に自動読込 |
+| **RoleEngine** | ロール定義を読み込み、LLMを使ってラウンド内の発言を生成するエンジン |
+| **DiscussionProtocol** | 複数ラウンドの議論を管理するプロトコル。合意に達するか最大ラウンドまで実行 |
+| **Pipeline** | ステージを順に実行し、各ステージで議論→成果物生成→Git commitを行う |
+| **SSE** | Server-Sent Events。サーバーからWeb UIへリアルタイムにイベントを配信する仕組み |
+| **MagiEvent** | パイプライン実行中に発行されるイベント。stage_start, statement, round_end, artifact等 |
+| **activePipeline** | Magiクラスが現在実行中のパイプラインを追跡するフィールド。介入に使用 |
+| **pendingMessages** | DiscussionProtocol内のユーザーメッセージキュー。ラウンド完了後にドレインされる |
+| **AIDLC** | AI Development Life Cycle。MagiのSpecモード=Inception、Buildモード=Construction に対応 |
