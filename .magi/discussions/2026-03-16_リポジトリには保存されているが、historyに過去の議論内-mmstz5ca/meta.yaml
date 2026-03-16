@@ -1,0 +1,22 @@
+id: "リポジトリには保存されているが、historyに過去の議論内-mmstz5ca"
+task: "リポジトリには保存されているが、Historyに過去の議論内容が表示されない。"
+started_at: "2026-03-16T06:57:03.178Z"
+completed_at: "2026-03-16T07:06:27.193Z"
+total_tokens: 0
+total_cost: 0.0000
+stages:
+  - name: elaborate
+    rounds: 2
+    commits: 1
+  - name: specify
+    rounds: 2
+    commits: 1
+  - name: decide
+    rounds: 2
+    commits: 1
+  - name: plan
+    rounds: 2
+    commits: 1
+  - name: sync
+    rounds: 0
+    commits: 0
