@@ -1,0 +1,113 @@
+tasks:
+  - id: T-001
+    title: "サーバー側 /api/history エンドポイントの実装"
+    description: "既存ContextLoaderパターンを流用して.magi/discussions/配下のmeta.yamlを読み込み、JSON形式で返却するAPIを実装"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "3h"
+    depends_on: []
+    acceptance_criteria:
+      - "/api/historyでGETリクエストを受け付ける"
+      - ".magi/discussions/配下の全フォルダからmeta.yamlを読み込む"
+      - "id, title, createdAt, mode, statusを含むJSONレスポンスを返す"
+      - "taskSummary未対応ファイルはタイトルのみで対応"
+      - "破損ファイル数をcorruptedCountで通知"
+
+  - id: T-002
+    title: "サーバー側エラーハンドリングとセキュリティ対策"
+    description: "ファイル読み込み時のエラーハンドリングと基本的なセキュリティチェックを実装"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "2h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "YAMLパース失敗時は該当項目をスキップ"
+      - "個別ファイル読み込み失敗時は該当項目をスキップ"
+      - "フォルダ名に..を含む場合は除外"
+      - "破損ファイル数を正確にカウントしてレスポンスに含める"
+
+  - id: T-003
+    title: "Web UI History画面の状態表示実装"
+    description: "読み込み中・エラー・空状態を明確に区別した状態表示をHistory画面に実装"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "2h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "読み込み中状態でスケルトン表示"
+      - "エラー状態で「エラーが発生しました」表示"
+      - "空状態で「議論がまだありません」表示"
+      - "破損ファイル数が0以外の場合は件数を画面上部に表示"
+
+  - id: T-004
+    title: "Web UI History一覧の議論項目表示実装"
+    description: "APIから取得した議論データを最新順で表示するHistory一覧画面を実装"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "3h"
+    depends_on: ["T-001", "T-003"]
+    acceptance_criteria:
+      - "議論項目をタイトル・日付・モード・ステータス付きで表示"
+      - "作成日時降順（最新順）でソート表示"
+      - "各項目に基本的なスタイリングを適用"
+      - "taskSummaryがある場合は表示、ない場合はタイトルのみ表示"
+
+  - id: T-005
+    title: "CLI magi history コマンドの実装"
+    description: "CLI経由で過去の議論一覧を表示するhistoryコマンドを実装"
+    story_ref: "US-3"
+    assignee: "Dev"
+    priority: medium
+    estimate: "2h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "magi historyコマンドで議論一覧が表示される"
+      - "タイトル・日付・モード・ステータスの基本情報を含む"
+      - "最新順でソートして表示"
+      - "エラー時は適切なエラーメッセージを表示"
+
+  - id: T-006
+    title: "基本的なE2Eテストの実装"
+    description: "History機能の基本動作を確認する最小限のE2Eテストを実装"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: medium
+    estimate: "2h"
+    depends_on: ["T-004", "T-005"]
+    acceptance_criteria:
+      - "議論ファイルが存在する場合の一覧表示テスト"
+      - "議論ファイルが存在しない場合の空状態表示テスト"
+      - "破損ファイルが存在する場合のエラーハンドリングテスト"
+      - "CLI historyコマンドの基本動作テスト"
+
+  - id: T-007
+    title: "Web UI APIクライアント実装"
+    description: "フロントエンドから/api/historyを呼び出すAPIクライアント機能を実装"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "1h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "/api/historyへのGETリクエスト実装"
+      - "レスポンスデータの型定義"
+      - "基本的なエラーハンドリング"
+      - "ローディング状態の管理"
+
+  - id: T-008
+    title: "統合テストと動作確認"
+    description: "実装した全機能の統合テストと動作確認を実施"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "1h"
+    depends_on: ["T-006"]
+    acceptance_criteria:
+      - "Web UIでHistory一覧が正常に表示される"
+      - "CLIでhistoryコマンドが正常に動作する"
+      - "エラー状態・空状態が適切に表示される"
+      - "既存機能にリグレッションが発生していない"
