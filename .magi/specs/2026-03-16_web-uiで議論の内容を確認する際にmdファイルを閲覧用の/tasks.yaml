@@ -1,0 +1,70 @@
+tasks:
+  - id: T-001
+    title: "StatementCardコンポーネントのマークダウン記法CSS改善"
+    description: "StatementCardコンポーネントで表示される議論内容のマークダウン記法部分（##, **, -, ` 等）をtext-gray-500で薄色表示し、視覚的ヒエラルキーを改善する。既存のwhitespace-pre-wrap表示は維持。"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: high
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "見出し記法（##, ###）が薄いグレー色で表示される"
+      - "強調記法（**, __）が薄いグレー色で表示される"
+      - "リスト記法（-, *）が薄いグレー色で表示される"
+      - "インラインコード記法（`）が薄いグレー色で表示される"
+      - "既存のwhitespace-pre-wrap表示が維持される"
+      - "既存のロールカラー表示機能が正常に動作する"
+
+  - id: T-002
+    title: "DiscussionLiveコンポーネントでのCSS改善適用"
+    description: "DiscussionLiveコンポーネントでリアルタイム更新される議論内容にも同様のマークダウン記法CSS改善を適用する。新規追加される議論カードに自動適用される仕組みを確保。"
+    story_ref: "US-2"
+    assignee: "Dev"
+    priority: high
+    estimate: "1h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "リアルタイム更新時に新規議論カードでもCSS改善が適用される"
+      - "既存の議論カードのスタイルが変更されない"
+      - "DiscussionLiveの更新パフォーマンスが劣化しない"
+
+  - id: T-003
+    title: "アクセシビリティ影響の検証"
+    description: "マークダウン記法の薄色表示がスクリーンリーダーや視覚的アクセシビリティに与える影響を検証し、必要に応じて色のコントラスト比を調整する。"
+    story_ref: "US-2"
+    assignee: "PD"
+    priority: medium
+    estimate: "30min"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "スクリーンリーダーでの読み上げが既存と同等の品質を維持する"
+      - "薄色表示の文字が視認可能な最低限のコントラスト比を満たす"
+      - "ダークテーマでの視認性が確保される"
+
+  - id: T-004
+    title: "既存機能との統合確認"
+    description: "マークダウン記法CSS改善が既存のStatementCardスタイル、ロールカラー表示、レスポンシブデザインと適切に統合されることを確認し、視覚的整合性をテスト。"
+    story_ref: "US-3"
+    assignee: "PD"
+    priority: medium
+    estimate: "30min"
+    depends_on: ["T-002"]
+    acceptance_criteria:
+      - "発言者ロールによる色分け表示が正常に動作する"
+      - "モバイル端末での表示が適切に調整される"
+      - "既存のCSS Modulesスタイルとの競合が発生しない"
+      - "長文議論での表示パフォーマンスが維持される"
+
+  - id: T-005
+    title: "エラーハンドリングとフォールバック実装"
+    description: "CSS適用失敗時やブラウザ互換性問題発生時に、既存のwhitespace-pre-wrap表示にフォールバックする仕組みを実装し、デグレードリスクを最小化。"
+    story_ref: "US-1"
+    assignee: "Dev"
+    priority: low
+    estimate: "1h"
+    depends_on: ["T-001"]
+    acceptance_criteria:
+      - "CSS適用失敗時に既存表示にフォールバックする"
+      - "古いブラウザでも基本的な表示が維持される"
+      - "JavaScript無効環境でも表示が破綻しない"
+      - "エラー発生時にコンソールログが出力される"
