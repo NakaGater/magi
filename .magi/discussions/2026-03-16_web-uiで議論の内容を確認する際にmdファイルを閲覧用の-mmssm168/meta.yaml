@@ -1,0 +1,22 @@
+id: "web-uiで議論の内容を確認する際にmdファイルを閲覧用の-mmssm168"
+task: "web uiで議論の内容を確認する際にmdファイルを閲覧用の表示で見えるようにしたいです。今はマークダウンの記法のまま表示されていて見にくいです。"
+started_at: "2026-03-16T06:18:51.632Z"
+completed_at: "2026-03-16T06:29:27.609Z"
+total_tokens: 0
+total_cost: 0.0000
+stages:
+  - name: elaborate
+    rounds: 2
+    commits: 1
+  - name: specify
+    rounds: 3
+    commits: 1
+  - name: decide
+    rounds: 2
+    commits: 1
+  - name: plan
+    rounds: 2
+    commits: 1
+  - name: sync
+    rounds: 0
+    commits: 0
