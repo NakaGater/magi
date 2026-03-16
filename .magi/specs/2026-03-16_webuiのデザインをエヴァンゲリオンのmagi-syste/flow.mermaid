@@ -1,0 +1,94 @@
+graph TD
+    A["🔷 ディスカッション開始<br/>discussionId取得"] --> B["📋 ステージ一覧取得<br/>GET /api/discussions/{id}/stages"]
+    
+    B --> C{"ステージ状態<br/>確認"}
+    
+    C -->|waiting| D["⏳ StageProgress<br/>status: waiting"]
+    C -->|active| E["▶️ StageProgress<br/>status: active"]
+    C -->|done| F["✅ StageProgress<br/>status: done"]
+    
+    E --> G["💬 メッセージ一覧取得<br/>GET /api/discussions/{id}/messages"]
+    
+    G --> H["🎨 StatementCard描画<br/>ロール別カラーボーダー表示"]
+    
+    H --> I{"ロール判定"}
+    I -->|PM| J["🔵 PM: 青 #4A90D9"]
+    I -->|PD| K["🟠 PD: 橙 #E8A838"]
+    I -->|Dev| L["🟢 Dev: 緑 #50C878"]
+    
+    J --> M["📝 Markdown描画<br/>見出し・リスト・コード対応"]
+    K --> M
+    L --> M
+    
+    M --> N{"isDim<br/>参考発言?"}
+    N -->|true| O["💫 Dim処理適用<br/>視覚的軽減"]
+    N -->|false| P["🔊 通常表示"]
+    
+    O --> Q["♿ アクセシビリティ属性付与<br/>role, aria-label, ariaLabel"]
+    P --> Q
+    
+    Q --> R["📊 ステージ進捗取得<br/>GET /api/discussions/{id}/stages/{stageId}/progress"]
+    
+    R --> S["📈 StageProgress更新<br/>progress: current/total/percentage"]
+    
+    S --> T["🤝 合意判定取得<br/>GET /api/discussions/{id}/consensus"]
+    
+    T --> U["🎯 ConsensusMarker描画"]
+    
+    U --> V{"合意状態"}
+    V -->|agreed| W["✅ AGREED<br/>アイコン+テキスト"]
+    V -->|partial| X["⚠️ PARTIAL<br/>アイコン+テキスト"]
+    V -->|disagreed| Y["❌ DISAGREED<br/>アイコン+テキスト"]
+    
+    W --> Z["🔄 ロール別内訳表示<br/>PM/PD/Dev confidence値"]
+    X --> Z
+    Y --> Z
+    
+    Z --> AA["💬 新規メッセージ送信<br/>POST /api/discussions/{id}/messages"]
+    
+    AA --> AB["📤 リクエストパラメータ<br/>discussionId, stageId, role, content"]
+    
+    AB --> AC{"バリデーション"}
+    AC -->|role enum外| AD["❌ 400 Error<br/>Invalid Parameter"]
+    AC -->|ステージ非active| AE["❌ 409 Error<br/>Stage State Error"]
+    AC -->|10000文字超過| AF["❌ 413 Error<br/>Content Overflow"]
+    AC -->|✅ 有効| AG["💾 メッセージ保存<br/>rendered Content生成"]
+    
+    AG --> AH["📡 リアルタイム同期<br/>Markdown렌더링"]
+    
+    AH --> AI["🔄 UI更新<br/>新メッセージをStatementCardで描画"]
+    
+    AI --> AJ{"ステージ進捗<br/>100%?"}
+    
+    AJ -->|No| AK["↩️ メッセージ入力待機<br/>ステップE へ"]
+    AJ -->|Yes| AL["🎬 ステージ完了<br/>status: done"]
+    
+    AL --> AM{"全ステージ<br/>完了?"}
+    AM -->|No| AN["➡️ 次ステージ遷移<br/>waiting → active"]
+    AN --> E
+    AM -->|Yes| AO["🏁 ディスカッション終了<br/>最終合意表示"]
+    
+    AO --> AP["📊 アクセシビリティベースライン確認<br/>GET /api/accessibility/baseline"]
+    
+    AP --> AQ["✅ WCAG AA準拠確認<br/>Lighthouse: 85+"]
+    
+    AQ --> AR["♿ スクリーンリーダー互換性確認<br/>NVDA: PASS"]
+    
+    AR --> AS["🎨 色覚異常シミュレーション確認<br/>protanopia/deuteranopia/tritanopia"]
+    
+    AS --> AT["✨ 本番リリース"]
+    
+    style A fill:#e1f5ff
+    style D fill:#fff3e0
+    style E fill:#c8e6c9
+    style F fill:#f1f8e9
+    style J fill:#bbdefb
+    style K fill:#ffe0b2
+    style L fill:#c8e6c9
+    style W fill:#a5d6a7
+    style X fill:#ffcc80
+    style Y fill:#ef9a9a
+    style AD fill:#ffcdd2
+    style AE fill:#ffcdd2
+    style AF fill:#ffcdd2
+    style AT fill:#81c784

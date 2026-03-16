@@ -1,0 +1,229 @@
+tasks:
+  # ===== MVP フェーズ：前置条件クリアタスク（Week 1-2） =====
+  
+  - id: T-001
+    title: "PM: 要望出処確認＋ビジネス成功指標定義"
+    description: |
+      エヴァンゲリオンテーマ化の要望が営業・採用・CEO のいずれからの要望かを直接確認。
+      期日・ビジネス目的・成功測定指標を明文化する。
+      成果物: PM が Slack/メール確認内容を `.magi/context/ADR-002-evangelion-stakeholder-confirmation.md` に記録
+    story_ref: "US-3"
+    assignee: "PM"
+    priority: "high"
+    estimate: "1d"
+    depends_on: []
+    acceptance_criteria:
+      - "営業・採用・CEO のいずれかが特定される"
+      - "要望の背景（ブランド強化 / UX 改善 / 採用効果など）が明文化"
+      - "期日が確定（2週間 / 1ヶ月 / 無期限など）"
+      - "成功指標が定量化（NPS / 採用候補者数 / 業務時間短縮率など）"
+      - "ドキュメントが `.magi/context/` に保存される"
+
+  - id: T-002
+    title: "Dev: ユニットテスト実装 StatementCard（5ケース）"
+    description: |
+      StatementCard コンポーネントの核となるテストケースを実装。
+      Vitest + @testing-library/react を使用。
+      - ロール別カラー表示の正確性（PM/PD/Dev ロール判定）
+      - Markdown HTML レンダリング内容の表示確認
+      - クリック時の詳細表示トリガー
+      - SSE リアルタイム更新時の再レンダリング
+      - エラーバウンダリ処理時の表示
+    story_ref: "FR-2"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "4h"
+    depends_on: []
+    acceptance_criteria:
+      - "5つのテストケースが実装される"
+      - "全テストが CI で自動実行・パスする"
+      - "テストファイルが `src/components/__tests__/StatementCard.test.tsx` に配置"
+      - "カバレッジレポートに含まれる"
+      - "テスト実行時間が 5 秒以内"
+
+  - id: T-003
+    title: "Dev: ユニットテスト実装 StageProgress（3ケース）"
+    description: |
+      StageProgress コンポーネントのテストケース実装。
+      - 現在ステージの正確な表示
+      - ラウンド別グループ化の HTML 構造確認
+      - ステージクリック時のナビゲーション トリガー
+    story_ref: "FR-2"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "3h"
+    depends_on: []
+    acceptance_criteria:
+      - "3つのテストケースが実装される"
+      - "全テストが CI で自動実行・パスする"
+      - "テストファイルが `src/components/__tests__/StageProgress.test.tsx` に配置"
+
+  - id: T-004
+    title: "Dev: ユニットテスト実装 ConsensusMarker（2ケース）"
+    description: |
+      ConsensusMarker コンポーネントのテストケース実装。
+      - 投票ボタン機能（賛成/反対/棄権）の動作確認
+      - 投票結果の集計表示と合意率メーター表示
+    story_ref: "FR-2"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "2つのテストケースが実装される"
+      - "全テストが CI で自動実行・パスする"
+      - "テストファイルが `src/components/__tests__/ConsensusMarker.test.tsx` に配置"
+
+  - id: T-005
+    title: "Dev: GitHub Actions CI パイプライン構築"
+    description: |
+      ユニットテスト自動実行 CI パイプラインの構築。
+      - Vitest の自動実行設定
+      - テスト実行時間の測定記録
+      - テストカバレッジレポート生成
+      - 本番デプロイ前のテスト全パス確認ゲート設置
+    story_ref: "FR-2"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "2h"
+    depends_on: ["T-002", "T-003", "T-004"]
+    acceptance_criteria:
+      - "`.github/workflows/test.yml` が作成される"
+      - "PR 時に自動テスト実行が動作"
+      - "テスト失敗時に merge ブロック機能が有効"
+      - "テスト実行時間が 150 秒以内（現在 120 秒比 +30 秒以内）"
+      - "カバレッジレポートが生成・記録される"
+
+  - id: T-006
+    title: "Dev: アクセシビリティベースライン測定（自動ツール）"
+    description: |
+      現在の Web UI のアクセシビリティスコアを測定・記録。
+      今後のテーマ化実装時の比較ベースラインとする。
+      - Lighthouse Accessibility スコア記録
+      - axe DevTools による WCAG 2.1 AA 準拠項目自動検証
+      - Lighthouse Performance / CLS / LCP / FID 測定
+      成果物: `.magi/context/accessibility-baseline.md` に測定結果・スコア記載
+    story_ref: "NFR-4"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "Lighthouse スコア（Accessibility / Performance）が記録される"
+      - "axe DevTools による違反項目リストが記載される"
+      - "Core Web Vitals（LCP / FID / CLS）が測定・記録される"
+      - "`.magi/context/accessibility-baseline.md` に以下が含まれる："
+      - "  - 測定日時"
+      - "  - 各スコア詳細値"
+      - "  - WCAG AA 準拠度（準拠 / 要修正）"
+      - "  - 色覚異常シミュレーション結果の備考"
+
+  - id: T-007
+    title: "Dev: スクリーンリーダー実機検証（NVDA）"
+    description: |
+      NVDA（Windows 無料スクリーンリーダー）を使用した実機検証。
+      現在の UI がスクリーンリーダーで正確に読上されるか確認。
+      テーマ化実装時のアクセシビリティ悪化リスク評価の基準となる。
+      - ボタン・フォーム・リンクの読上内容確認
+      - ランドマーク（nav / main / section）の正確性確認
+      - 非表示テキスト（screen-reader-only）の機能確認
+      成果物: テスト実行ログを `.magi/context/nvda-test-results.md` に記載
+    story_ref: "NFR-4"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "3h"
+    depends_on: []
+    acceptance_criteria:
+      - "NVDA で各主要機能（メッセージ入力・投票・ステージ選択）が正確に読上される"
+      - "読上順序が論理的に正しい"
+      - "ボタンラベルが正確に識別される"
+      - "エラーメッセージが明確に読上される"
+      - "テスト実行スクリーンショット・ログが `.magi/context/nvda-test-results.md` に記載される"
+
+  - id: T-008
+    title: "Dev: ハイコントラスト表示モード検証"
+    description: |
+      Windows ハイコントラストモード下での UI 視認性確認。
+      色覚異常シミュレーション（Coblis / Daltonize）による配色テスト。
+      - ロール別カラー（PM 青 / PD 橙 / Dev 緑）がハイコントラストで識別可能か確認
+      - テーマ化による色の強調が、色盲ユーザーに排除感を与えないか事前検証
+      成果物: 検証結果スクリーンショット・評価を `.magi/context/contrast-mode-test.md` に記載
+    story_ref: "NFR-4"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "2h"
+    depends_on: []
+    acceptance_criteria:
+      - "Windows ハイコントラストモード下で UI 要素が視認可能"
+      - "ロール別カラーが色覚異常シミュレーション下で識別可能（WCAG AA 準拠）"
+      - "テキストコントラスト比が 4.5:1 以上を維持"
+      - "検証結果スクリーンショット・評価コメントが記載される"
+
+  - id: T-009
+    title: "Dev: アクセシビリティベースラインドキュメント作成"
+    description: |
+      T-006, T-007, T-008 の測定結果をまとめた統合ドキュメント作成。
+      テーマ化実装時の「アクセシビリティ悪化チェックリスト」として機能させる。
+      - Lighthouse スコア比較テーブル
+      - NVDA 実機テスト結果サマリー
+      - ハイコントラスト検証結果
+      - テーマ化で「OK な項目」「NG な項目」の制約明示
+    story_ref: "FR-7"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "2h"
+    depends_on: ["T-006", "T-007", "T-008"]
+    acceptance_criteria:
+      - "`.magi/context/accessibility-baseline.md` に以下セクションが含まれる：測定日・測定者・対象環境、Lighthouse スコア詳細値、axe DevTools 違反項目リスト、NVDA 実機テスト結果、ハイコントラスト検証結果、色覚異常対応度評価、テーマ化実装時の制約、今後の改善提案"
+
+  - id: T-010
+    title: "Dev: 回帰テスト実施（SSE 接続・メッセージ送信・ステージナビゲーション）"
+    description: |
+      テスト導入後の既存機能正常動作確認。
+      重大機能（SSE 接続・メッセージキュー・React 状態管理）の手動テスト実施。
+      - SSE 接続確立・リアルタイム受信・接続断時の自動再接続
+      - メッセージ入力フォーム送信・pending メッセージドレイン
+      - ステージ選択・ラウンド進捗表示・時系列グループ化
+      - 投票・合意率更新のリアルタイム反映
+      テスト結果を `.magi/context/regression-test-checklist.md` に記録
+    story_ref: "FR-3"
+    assignee: "Dev"
+    priority: "high"
+    estimate: "3h"
+    depends_on: ["T-005"]
+    acceptance_criteria:
+      - "SSE 接続が正常に確立・動作"
+      - "接続断時に自動再接続が 5 秒以内に完了"
+      - "メッセージ送信が正常に動作・確認可能"
+      - "ステージナビゲーション・ラウンド進捗表示が正確"
+      - "投票機能・合意率更新がリアルタイムで反映"
+      - "テスト実行チェックリストが `.magi/context/regression-test-checklist.md` に記載、全項目が確認状態"
+
+  - id: T-011
+    title: "Dev: 技術スパイク実行（エヴァンゲリオン配色変更のみ）"
+    description: |
+      テーマ化実装の技術可能性を最小限の配色変更で検証。
+      詳細仕様設計ではなく「実装可能か」の実証のみが目的。
+      - ロール別カラーの MAGI テーマ配色への置き換え（HTML 構造刷新なし）
+      - ビルド時間・バンドルサイズの計測
+      - Core Web Vitals（LCP / FID / CLS）への影響測定
+      - 実装コスト・複雑性の評価
+      成果物: `.magi/context/evangelion-spike-report.md` に測定結果・評価記載
+    story_ref: "FR-5"
+    assignee: "Dev"
+    priority: "medium"
+    estimate: "4h"
+    depends_on: ["T-005"]
+    acceptance_criteria:
+      - "配色変更版ブランチが作成され、動作確認"
+      - "ビルド時間が測定・記録（現在 60-90 秒比 +10 秒以内か判定）"
+      - "バンドルサイズが測定・記録（現在 150KB 比 +20% 以内か判定）"
+      - "Core Web Vitals が測定（LCP 2.5s / FID 100ms / CLS 0.1 以内）"
+      - "実装の複雑性・リスク評価が記載される"
+      - "`.magi/context/evangelion-spike-report.md` に測定日時・環境、ビルド時間比較、バンドルサイズ比較、CWV 測定結果、実装難度・リスク評価、制約条件・今後の検討課題が含まれる"
+
+  - id: T-012
+    title: "Dev: Markdown フルレンダリング完成（見出し・リスト・コードブロック・テーブル）"
+    description: |
+      Markdown レンダリングの完全実装。
+      remark + rehype ライブラリを導入し、見
