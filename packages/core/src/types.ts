@@ -178,7 +178,7 @@ export type MagiEventHandler = (event: MagiEvent) => void;
 export const DEFAULT_CONFIG: MagiConfig = {
   llm: {
     provider: "anthropic",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-haiku-4-5-20251001",
     maxTokens: 4096,
   },
   pipeline: {

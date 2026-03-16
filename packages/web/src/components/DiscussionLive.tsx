@@ -51,7 +51,7 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
       await sendMessage(taskId, msg);
       setMessageInput("");
     } catch {
-      // silently ignore — the message will not appear if it fails
+      // silently ignore
     } finally {
       setSending(false);
     }
@@ -61,9 +61,11 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
     <div className="space-y-6">
       {/* Task Banner */}
       {taskText && (
-        <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
-          <span className="text-xs font-medium text-accent uppercase tracking-wide">課題</span>
-          <p className="text-sm text-text-primary mt-1">{taskText}</p>
+        <div className="magi-frame bg-accent/5 px-4 py-3">
+          <span className="text-xs font-mono font-bold text-accent uppercase tracking-wider magi-glow">
+            MISSION BRIEF
+          </span>
+          <p className="text-sm text-text-primary mt-1 font-mono">{taskText}</p>
         </div>
       )}
 
@@ -71,8 +73,8 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
       <div className="flex items-center gap-3">
         <StatusBadge status={state.status} />
         {state.mode && (
-          <span className="text-sm text-text-dim">
-            {state.mode === "spec" ? "Spec" : "Build"} mode
+          <span className="text-xs font-mono text-text-dim uppercase tracking-wider">
+            {state.mode === "spec" ? "SPEC MODE" : "BUILD MODE"}
           </span>
         )}
       </div>
@@ -86,13 +88,13 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto pr-2"
+        className="space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto overflow-x-hidden scrollbar-hidden pr-2"
       >
         {state.rounds.map((round, i) => (
           <div key={i} className="space-y-3">
-            <div className="flex items-center gap-2 text-xs text-text-dim pt-2">
-              <span className="font-medium">
-                {stageLabel(round.stage)} - Round {round.round}
+            <div className="flex items-center gap-2 text-xs text-text-dim pt-2 font-mono uppercase tracking-wider">
+              <span className="magi-glow">
+                {stageLabel(round.stage)} // ROUND {round.round}
               </span>
               <div className="flex-1 h-px bg-border" />
             </div>
@@ -114,9 +116,9 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
         {state.artifacts.map((art, i) => (
           <div
             key={`art-${i}`}
-            className="flex items-center gap-2 text-sm text-dev bg-dev/10 rounded-lg px-3 py-2"
+            className="flex items-center gap-2 text-xs text-dev bg-dev/10 border border-dev/20 px-3 py-2 font-mono"
           >
-            <span>{"\u{1F4C4}"}</span>
+            <span className="font-bold magi-glow">[OUTPUT]</span>
             <span>
               {art.type}: {art.path}
             </span>
@@ -127,10 +129,10 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
         {state.commits.map((commit, i) => (
           <div
             key={`commit-${i}`}
-            className="flex items-center gap-2 text-sm text-dev bg-dev/10 rounded-lg px-3 py-2"
+            className="flex items-center gap-2 text-xs text-dev bg-dev/10 border border-dev/20 px-3 py-2 font-mono"
           >
-            <span>{"\u{1F4DD}"}</span>
-            <span className="font-mono text-xs">{commit.hash?.slice(0, 7)}</span>
+            <span className="font-bold magi-glow">[COMMIT]</span>
+            <span>{commit.hash?.slice(0, 7)}</span>
             <span>{commit.message}</span>
           </div>
         ))}
@@ -139,17 +141,17 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
         {state.gates.map((gate, i) => (
           <div
             key={`gate-${i}`}
-            className="flex items-center gap-2 text-sm text-pd bg-pd/10 rounded-lg px-3 py-2"
+            className="flex items-center gap-2 text-xs text-pd bg-pd/10 border border-pd/20 px-3 py-2 font-mono"
           >
-            <span>{"\u{1F6A6}"}</span>
+            <span className="font-bold magi-glow">[GATE]</span>
             <span>{gate}</span>
           </div>
         ))}
 
         {/* Error */}
         {state.error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {state.error}
+          <div className="magi-frame border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 font-mono">
+            <span className="font-bold">[ERROR]</span> {state.error}
           </div>
         )}
 
@@ -169,15 +171,15 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
               }
             }}
             disabled={sending}
-            placeholder="議論に介入するメッセージを入力..."
-            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-text-dim focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+            placeholder="> OPERATOR INPUT..."
+            className="flex-1 border border-border bg-surface px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-dim focus:outline-none focus:border-accent/50 disabled:opacity-50"
           />
           <button
             onClick={handleSendMessage}
             disabled={sending || !messageInput.trim()}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border border-accent bg-accent/10 px-4 py-2 text-xs font-mono font-bold text-accent uppercase tracking-wider hover:bg-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            送信
+            SEND
           </button>
         </div>
       )}
@@ -186,30 +188,40 @@ export function DiscussionLive({ taskId }: DiscussionLiveProps) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
+  const config: Record<string, { label: string; color: string }> = {
     connecting: {
-      label: "Connecting...",
-      className: "bg-text-dim/20 text-text-dim",
+      label: "CONNECTING",
+      color: "#4a7a5a",
     },
     running: {
-      label: "Running",
-      className: "bg-accent/20 text-accent animate-pulse",
+      label: "PROCESSING",
+      color: "#58f2a5",
     },
     completed: {
-      label: "Completed",
-      className: "bg-dev/20 text-dev",
+      label: "COMPLETE",
+      color: "#58f2a5",
     },
     error: {
-      label: "Error",
-      className: "bg-red-500/20 text-red-400",
+      label: "ERROR",
+      color: "#f25858",
     },
   };
 
   const c = config[status] ?? config.connecting;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${c.className}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider border"
+      style={{
+        color: c.color,
+        borderColor: `${c.color}40`,
+        backgroundColor: `${c.color}10`,
+        animation: status === "running" ? "magi-pulse 2s infinite" : undefined,
+      }}
+    >
+      <span
+        className="w-1.5 h-1.5 bg-current"
+      />
       {c.label}
     </span>
   );

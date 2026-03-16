@@ -1,7 +1,7 @@
 "use client";
 
 import type { ConsensusStatus } from "@/lib/types";
-import { CONSENSUS_CONFIG } from "@/lib/constants";
+import { CONSENSUS_CONFIG, ROLE_CONFIG } from "@/lib/constants";
 
 interface ConsensusMarkerProps {
   consensus: ConsensusStatus;
@@ -13,13 +13,24 @@ export function ConsensusMarker({ consensus, summary }: ConsensusMarkerProps) {
 
   return (
     <div
-      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
-      style={{ backgroundColor: `${config.color}15`, color: config.color }}
+      className="magi-frame px-4 py-3 font-mono"
+      style={{ backgroundColor: `${config.color}10` }}
     >
-      <span>{config.icon}</span>
-      <span className="font-medium">{config.label}</span>
+      <div className="flex items-center gap-3">
+        <span
+          className="text-sm font-bold uppercase tracking-wider magi-glow-strong"
+          style={{ color: config.color }}
+        >
+          {config.icon} {config.label}
+        </span>
+        <div className="flex gap-2 text-xs">
+          <span style={{ color: ROLE_CONFIG.PM.color }}>M:1</span>
+          <span style={{ color: ROLE_CONFIG.PD.color }}>B:2</span>
+          <span style={{ color: ROLE_CONFIG.Dev.color }}>C:3</span>
+        </div>
+      </div>
       {summary && (
-        <span className="text-text-dim ml-2 text-xs truncate">{summary}</span>
+        <p className="text-text-dim text-xs mt-1 truncate">{summary}</p>
       )}
     </div>
   );

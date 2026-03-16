@@ -3,8 +3,8 @@ import { Header } from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Magi - 3人の賢者",
-  description: "3人の賢者が議論し、成果物を生み出す",
+  title: "MAGI SYSTEM - Super-Computer Decision System",
+  description: "MELCHIOR / BALTHASAR / CASPER — 3基の超計算機による合議制意思決定システム",
 };
 
 export default function RootLayout({

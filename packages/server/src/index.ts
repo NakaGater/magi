@@ -47,6 +47,10 @@ app.post("/api/spec", async (c) => {
     return c.json({ error: "task is required" }, 400);
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return c.json({ error: "ANTHROPIC_API_KEY is not set" }, 503);
+  }
+
   const taskId = `spec-${Date.now().toString(36)}`;
 
   activeTasks.set(taskId, {
@@ -103,8 +107,9 @@ app.post("/api/spec/:id/message", async (c) => {
   return handleInjectMessage(c, c.req.param("id"));
 });
 
-app.get("/api/specs", (c) => {
-  const specs = Array.from(activeTasks.entries())
+app.get("/api/specs", async (c) => {
+  // In-memory running specs
+  const running = Array.from(activeTasks.entries())
     .filter(([, data]) => data.mode === "spec")
     .map(([id, data]) => ({
       id,
@@ -113,7 +118,29 @@ app.get("/api/specs", (c) => {
       events: data.events.length,
     }));
 
-  return c.json(specs);
+  const runningIds = new Set(running.map((r) => r.id));
+
+  // Disk-based completed specs
+  const discussions = await scanDiscussions();
+  const completed: { id: string; task: string; status: string; events: number; startedAt: string }[] = [];
+  for (const d of discussions) {
+    if (runningIds.has(d.hashId)) continue;
+    try {
+      const raw = await readFile(d.metaPath, "utf-8");
+      const meta = yaml.load(raw) as any;
+      completed.push({
+        id: d.hashId,
+        task: meta.task ?? "",
+        status: "completed",
+        events: 0,
+        startedAt: meta.started_at ?? "",
+      });
+    } catch {
+      // skip
+    }
+  }
+
+  return c.json([...running, ...completed]);
 });
 
 // --- Build endpoints ---
@@ -126,6 +153,10 @@ app.post("/api/tasks", async (c) => {
 
   if (!body.task) {
     return c.json({ error: "task is required" }, 400);
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return c.json({ error: "ANTHROPIC_API_KEY is not set" }, 503);
   }
 
   const taskId = `task-${Date.now().toString(36)}`;

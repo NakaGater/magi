@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Task" },
-  { href: "/specs", label: "Specs" },
-  { href: "/history", label: "History" },
+  { href: "/", label: "TASK" },
+  { href: "/specs", label: "SPECS" },
+  { href: "/history", label: "LOG" },
 ];
 
 export function Header() {
@@ -15,12 +15,12 @@ export function Header() {
   return (
     <header className="border-b border-border bg-surface">
       <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-14">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight text-accent">
-            Magi
+        <Link href="/" className="flex items-center gap-3">
+          <span className="text-lg font-bold tracking-wider text-accent uppercase font-mono magi-glow">
+            MAGI
           </span>
-          <span className="text-xs text-text-dim hidden sm:inline">
-            3人の賢者
+          <span className="text-xs text-text-dim hidden sm:inline font-mono uppercase tracking-wider">
+            SYSTEM v2.5
           </span>
         </Link>
 
@@ -34,10 +34,10 @@ export function Header() {
               <Link
                 key={href}
                 href={href}
-                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors ${
                   isActive
-                    ? "bg-surface-2 text-text-primary"
-                    : "text-text-dim hover:text-text-primary hover:bg-surface-2/50"
+                    ? "bg-accent/15 text-accent border border-accent/30"
+                    : "text-text-dim hover:text-accent hover:bg-surface-2/50 border border-transparent"
                 }`}
               >
                 {label}

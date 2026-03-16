@@ -1,12 +1,20 @@
+import { config as loadEnv } from "dotenv";
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
+import yaml from "js-yaml";
 import { spawn, type ChildProcess } from "child_process";
 import { existsSync } from "fs";
-import { resolve, dirname } from "path";
+import { readdir, readFile } from "fs/promises";
+import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { Magi } from "@magi/core";
-import type { MagiEvent, MagiConfig } from "@magi/core";
+import { Magi, ContextReferenceEngine } from "@magi/core";
+import type { MagiConfig } from "@magi/core";
+import { startRepl } from "./repl.js";
+import { formatMagiEvent, terminalWrite, formatDuration } from "./format.js";
+
+// Load .env from the current working directory (user's repo root)
+loadEnv({ path: resolve(process.cwd(), ".env") });
 
 const program = new Command();
 
@@ -70,6 +78,7 @@ program
       `  ${g("#8A83FF", "Web UI")}   ${chalk.white(`http://localhost:${webPort}`)}`,
       `  ${g("#8A83FF", "Mode")}     ${chalk.white(isDev ? "development" : "production")}`,
       chalk.dim("  ──────────────────────────────────────────────────"),
+      chalk.dim("  Type /help for commands, /quit to exit"),
       "",
     ];
     console.log(banner.join("\n"));
@@ -109,7 +118,7 @@ program
       for (const raw of data.toString().split("\n")) {
         const line = raw.trim();
         if (!line || shouldSuppress(line)) continue;
-        console.log(`  ${color(prefix)}  ${chalk.dim(line)}`);
+        terminalWrite(`  ${color(prefix)}  ${chalk.dim(line)}`);
       }
     };
 
@@ -132,30 +141,39 @@ program
     if (shouldOpen) {
       setTimeout(() => {
         const url = `http://localhost:${webPort}`;
-        spawn("open", [url], { stdio: "ignore" }).unref();
+        const openCmd = process.platform === "darwin" ? "open"
+          : process.platform === "win32" ? "cmd"
+          : "xdg-open";
+        const openArgs = process.platform === "win32" ? ["/c", "start", url] : [url];
+        spawn(openCmd, openArgs, { stdio: "ignore" }).unref();
       }, 3000);
     }
 
     // Graceful shutdown
     const shutdown = () => {
-      console.log(chalk.dim("\nMagi をシャットダウン中..."));
+      terminalWrite(chalk.dim("\nMagi をシャットダウン中..."));
       for (const child of children) {
         child.kill("SIGTERM");
       }
       setTimeout(() => process.exit(0), 2000);
     };
-    process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
 
-    // Wait for children to exit
-    await Promise.all(
-      children.map(
-        (child) =>
-          new Promise<void>((res) => {
-            child.on("exit", () => res());
-          }),
+    // Wait for server to be ready, then start REPL
+    await waitForServer(parseInt(serverPort));
+
+    // REPL and child process exit race
+    await Promise.race([
+      startRepl({ serverPort: parseInt(serverPort), onQuit: shutdown }),
+      Promise.all(
+        children.map(
+          (child) =>
+            new Promise<void>((res) => {
+              child.on("exit", () => res());
+            }),
+        ),
       ),
-    );
+    ]);
   });
 
 // --- Spec command ---
@@ -195,7 +213,7 @@ program
       console.log(chalk.bold(`📋 Specモード: ${task}`));
       console.log(chalk.dim("─".repeat(50)));
 
-      setupEventHandler(magi);
+      magi.onEvent(formatMagiEvent);
 
       const result = await magi.spec(task);
 
@@ -278,7 +296,7 @@ program
       console.log(chalk.bold(`📋 Buildモード: ${task}`));
       console.log(chalk.dim("─".repeat(50)));
 
-      setupEventHandler(magi);
+      magi.onEvent(formatMagiEvent);
 
       const result = await magi.build(task);
 
@@ -321,12 +339,72 @@ program
   .argument("[keyword]", "検索キーワード")
   .description("議論履歴の一覧")
   .action(async (keyword?: string) => {
+    const discussionsDir = resolve(process.cwd(), ".magi/discussions");
+    if (!existsSync(discussionsDir)) {
+      console.log(chalk.dim("議論履歴がありません (.magi/discussions/ が存在しません)"));
+      return;
+    }
+
+    const entries = await readdir(discussionsDir, { withFileTypes: true });
+
+    interface DiscussionEntry {
+      dirName: string;
+      hashId: string;
+      task: string;
+      startedAt: string;
+      stages: string[];
+    }
+
+    const items: DiscussionEntry[] = [];
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const metaPath = join(discussionsDir, entry.name, "meta.yaml");
+      if (!existsSync(metaPath)) continue;
+
+      try {
+        const raw = await readFile(metaPath, "utf-8");
+        const meta = yaml.load(raw) as Record<string, any>;
+        const hashMatch = entry.name.match(/-([a-z0-9]+)$/);
+        const hashId = hashMatch ? hashMatch[1] : entry.name;
+        const stages = (meta.stages ?? []).map((s: any) => s.name ?? s);
+
+        items.push({
+          dirName: entry.name,
+          hashId,
+          task: meta.task ?? "",
+          startedAt: meta.started_at ?? "",
+          stages,
+        });
+      } catch {
+        // skip unparseable
+      }
+    }
+
+    // Sort by startedAt descending
+    items.sort((a, b) => (b.startedAt > a.startedAt ? 1 : -1));
+
+    // Filter by keyword if given
+    const filtered = keyword
+      ? items.filter((item) => item.task.includes(keyword))
+      : items;
+
+    if (filtered.length === 0) {
+      console.log(chalk.dim(keyword ? `「${keyword}」に一致する議論が見つかりませんでした` : "議論履歴がありません"));
+      return;
+    }
+
     console.log(chalk.bold("📚 議論履歴"));
-    console.log(
-      chalk.dim("(実装予定: .magi/discussions/ と .magi/specs/ から読み込み)"),
-    );
-    if (keyword) {
-      console.log(chalk.dim(`検索: ${keyword}`));
+    console.log();
+
+    for (const item of filtered) {
+      const date = item.startedAt ? item.startedAt.substring(0, 10) : "----/--/--";
+      const stagesStr = item.stages.length > 0
+        ? chalk.dim(`[${item.stages.join(", ")}]`)
+        : "";
+      console.log(
+        `  ${chalk.dim(date)}  ${chalk.cyan(item.hashId)}  ${item.task}  ${stagesStr}`,
+      );
     }
   });
 
@@ -335,138 +413,45 @@ program
   .command("why <keyword>")
   .description("判断理由の検索")
   .action(async (keyword: string) => {
+    const engine = new ContextReferenceEngine(
+      resolve(process.cwd(), ".magi/discussions"),
+      resolve(process.cwd(), ".magi/specs"),
+    );
+    const refs = await engine.findRelated(keyword);
+
+    if (refs.length === 0) {
+      console.log(chalk.dim("該当する判断理由が見つかりませんでした"));
+      return;
+    }
+
     console.log(chalk.bold(`🔍 「${keyword}」に関する判断理由`));
-    console.log(chalk.dim("(実装予定: 議論ログ・ADRの全文検索)"));
-  });
+    console.log();
 
-// --- Event handler ---
-function setupEventHandler(magi: Magi): void {
-  magi.onEvent((event: MagiEvent) => {
-    switch (event.type) {
-      case "stage_start":
-        console.log();
-        console.log(chalk.cyan.bold(`▶ ${stageLabel(event.stage!)} 開始`));
-        console.log(chalk.dim("─".repeat(50)));
-        break;
-
-      case "round_start":
-        console.log(chalk.dim(`\n── Round ${event.data.round} ──`));
-        break;
-
-      case "statement": {
-        const { role, content } = event.data as {
-          role: string;
-          content: string;
-        };
-        const icon = roleIcon(role);
-        console.log();
-        console.log(chalk.bold(`${icon} ${role}`));
-        console.log(content as string);
-        break;
+    for (const ref of refs) {
+      console.log(chalk.cyan.bold(ref.title));
+      console.log(chalk.dim(`  ${ref.path}  (スコア: ${ref.relevance.toFixed(1)})`));
+      // Show excerpt, indented
+      const lines = ref.excerpt.split("\n").slice(0, 5);
+      for (const line of lines) {
+        console.log(chalk.dim(`  ${line}`));
       }
-
-      case "round_end": {
-        const consensus = event.data.consensus as string;
-        const icon =
-          consensus === "agreed"
-            ? "✅"
-            : consensus === "partial"
-              ? "🔶"
-              : "❌";
-        console.log(chalk.dim(`\n${icon} 合意状況: ${consensus}`));
-        break;
-      }
-
-      case "stage_end":
-        console.log(chalk.cyan(`✓ ${stageLabel(event.stage!)} 完了`));
-        break;
-
-      case "artifact": {
-        const artType = event.data.type as string;
-        const artPath = (event.data.path ?? event.data.paths) as string;
-        console.log(
-          chalk.green(`  📄 成果物生成: ${artType} → ${artPath}`),
-        );
-        break;
-      }
-
-      case "commit": {
-        console.log(
-          chalk.green(
-            `  📝 ${event.data.hash} ${event.data.message}`,
-          ),
-        );
-        break;
-      }
-
-      case "gate":
-        console.log(
-          chalk.yellow(`\n🚦 ゲート: ${event.data.message}`),
-        );
-        break;
-
-      case "pause":
-        console.log(
-          chalk.yellow(`\n⏸ 一時停止: ${event.data.reason}`),
-        );
-        break;
-
-      case "error":
-        console.log(
-          chalk.red(`\n❌ エラー: ${event.data.message}`),
-        );
-        break;
-
-      case "validation_warning":
-        console.log(
-          chalk.yellow(`\n⚠ バリデーション警告: ${event.data.message}`),
-        );
-        break;
-
-      case "context_synced":
-        console.log(
-          chalk.blue(`\n🔄 コンテキスト同期: ${event.data.updatedFiles ?? "完了"}`),
-        );
-        break;
+      console.log();
     }
   });
-}
 
-function stageLabel(stage: string): string {
-  const labels: Record<string, string> = {
-    // Spec mode
-    elaborate: "要件精緻化 (Elaborate)",
-    specify: "仕様策定 (Specify)",
-    decide: "設計判断 (Decide)",
-    plan: "タスク分割 (Plan)",
-    sync: "連携・承認 (Sync)",
-    // Build mode
-    analysis: "分析 (Analysis)",
-    design: "設計 (Design)",
-    implement: "実装 (Implementation)",
-    review: "レビュー (Review)",
-    verify: "検証 (Verification)",
-  };
-  return labels[stage] ?? stage;
-}
+// --- Helpers ---
 
-function roleIcon(role: string): string {
-  const icons: Record<string, string> = {
-    PM: "📊",
-    PD: "🎨",
-    Dev: "⚙️",
-  };
-  return icons[role] ?? "●";
-}
-
-function formatDuration(start: Date, end: Date): string {
-  const ms = end.getTime() - start.getTime();
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
+async function waitForServer(port: number, maxRetries = 30): Promise<void> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await fetch(`http://localhost:${port}/`);
+      if (res.ok) return;
+    } catch {
+      // not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 1000));
   }
-  return `${seconds}s`;
+  throw new Error("Server failed to start");
 }
 
 program.parse();

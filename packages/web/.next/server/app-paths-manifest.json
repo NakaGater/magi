@@ -1,8 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/history/page": "app/history/page.js",
-  "/specs/page": "app/specs/page.js",
-  "/page": "app/page.js",
   "/discussion/[id]/page": "app/discussion/[id]/page.js",
-  "/history/[id]/page": "app/history/[id]/page.js"
+  "/history/page": "app/history/page.js",
+  "/history/[id]/page": "app/history/[id]/page.js",
+  "/page": "app/page.js",
+  "/specs/page": "app/specs/page.js"
 }

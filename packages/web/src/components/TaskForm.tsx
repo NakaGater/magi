@@ -34,19 +34,20 @@ export function TaskForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-4">
       <div className="flex gap-2">
         <ModeButton
           active={mode === "spec"}
           onClick={() => setMode("spec")}
-          label="Spec"
+          label="SPEC"
           description="仕様書を生成"
         />
         <ModeButton
-          active={mode === "build"}
-          onClick={() => setMode("build")}
-          label="Build"
+          active={false}
+          onClick={() => {}}
+          label="BUILD"
           description="実装を実行"
+          disabled
         />
       </div>
 
@@ -56,24 +57,24 @@ export function TaskForm() {
           onChange={(e) => setTask(e.target.value)}
           placeholder={
             mode === "spec"
-              ? "仕様を議論したい課題を入力..."
-              : "実装したい課題を入力..."
+              ? "> ENTER SPECIFICATION QUERY..."
+              : "> ENTER BUILD COMMAND..."
           }
           rows={5}
-          className="w-full rounded-lg border border-border bg-surface-2 px-4 py-3 text-text-primary placeholder:text-text-dim focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+          className="w-full border border-border bg-surface-2 px-4 py-3 text-text-primary font-mono text-sm placeholder:text-text-dim focus:outline-none focus:border-accent/50 resize-none"
         />
       </div>
 
       {error && (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-400 font-mono">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={!task.trim() || submitting}
-        className="w-full rounded-lg bg-accent px-4 py-3 font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full border border-accent bg-accent/10 px-4 py-3 font-mono font-bold text-accent uppercase tracking-wider transition-colors hover:bg-accent/20 disabled:opacity-50 disabled:cursor-not-allowed magi-glow"
       >
-        {submitting ? "送信中..." : "議論を開始"}
+        {submitting ? "PROCESSING..." : "EXECUTE"}
       </button>
     </form>
   );
@@ -84,23 +85,28 @@ function ModeButton({
   onClick,
   label,
   description,
+  disabled,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   description: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 rounded-lg border px-4 py-3 text-left transition-colors ${
-        active
-          ? "border-accent bg-accent/10 text-text-primary"
-          : "border-border bg-surface text-text-dim hover:border-border hover:bg-surface-2"
+      disabled={disabled}
+      className={`flex-1 border px-4 py-3 text-left transition-colors font-mono ${
+        disabled
+          ? "border-border bg-surface text-text-dim opacity-40 cursor-not-allowed"
+          : active
+            ? "border-accent bg-accent/10 text-accent"
+            : "border-border bg-surface text-text-dim hover:border-accent/30 hover:bg-surface-2"
       }`}
     >
-      <div className="font-medium">{label}</div>
+      <div className="font-bold uppercase tracking-wider text-sm">{label}</div>
       <div className="text-xs mt-0.5 opacity-70">{description}</div>
     </button>
   );

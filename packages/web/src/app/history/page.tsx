@@ -19,32 +19,34 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-text-dim">
-        Loading...
+      <div className="flex items-center justify-center py-20 text-text-dim font-mono uppercase tracking-wider">
+        LOADING DATA...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-        {error}
+      <div className="magi-frame border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 font-mono">
+        <span className="font-bold">[ERROR]</span> {error}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">History</h1>
+      <h1 className="text-xl font-mono font-bold uppercase tracking-wider text-accent magi-glow">
+        SYSTEM LOG
+      </h1>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-text-dim space-y-2">
-          <p>まだ議論履歴がありません</p>
+        <div className="flex flex-col items-center justify-center py-20 text-text-dim space-y-2 font-mono">
+          <p className="uppercase tracking-wider">NO RECORDS FOUND</p>
           <Link
             href="/"
-            className="text-accent hover:underline text-sm"
+            className="text-accent hover:underline text-xs uppercase tracking-wider"
           >
-            最初のタスクを投入
+            &gt;&gt; SUBMIT FIRST TASK
           </Link>
         </div>
       ) : (
@@ -53,29 +55,30 @@ export default function HistoryPage() {
             <Link
               key={item.id}
               href={`/history/${item.id}`}
-              className="flex items-center gap-4 rounded-lg border border-border bg-surface p-4 hover:bg-surface-2 transition-colors"
+              className="flex items-center gap-4 magi-frame bg-surface p-4 hover:bg-surface-2 transition-colors"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">{item.task}</p>
-                <p className="text-xs text-text-dim mt-1">
+                <p className="text-sm font-mono truncate">{item.task}</p>
+                <p className="text-xs text-text-dim font-mono mt-1 uppercase tracking-wider">
                   {item.startedAt
                     ? new Date(item.startedAt).toLocaleString("ja-JP")
                     : "—"}
-                  {" · "}
+                  {" // "}
                   {item.stages
                     .filter((s) => s.rounds > 0)
                     .map((s) => stageLabel(s.name))
-                    .join(" → ")}
+                    .join(" > ")}
                 </p>
               </div>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 border whitespace-nowrap"
+                style={
                   item.completedAt
-                    ? "bg-dev/20 text-dev"
-                    : "bg-accent/20 text-accent"
-                }`}
+                    ? { color: "#58F2A5", borderColor: "#58F2A540", backgroundColor: "#58F2A510" }
+                    : { color: "#F5A623", borderColor: "#F5A62340", backgroundColor: "#F5A62310" }
+                }
               >
-                {item.completedAt ? "completed" : "incomplete"}
+                {item.completedAt ? "COMPLETE" : "INCOMPLETE"}
               </span>
             </Link>
           ))}

@@ -17,35 +17,41 @@ export function StageProgress({ stages, mode }: StageProgressProps) {
   }
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto pb-2">
-      {stageList.map((stage, i) => {
-        const status = getStatus(stage.key);
-        return (
-          <div key={stage.key} className="flex items-center">
-            {i > 0 && (
+    <div className="magi-frame bg-surface p-3">
+      <div className="text-xs font-mono uppercase tracking-wider text-text-dim mb-2 magi-glow">
+        PIPELINE STATUS
+      </div>
+      <div className="flex items-center gap-1 overflow-x-auto">
+        {stageList.map((stage, i) => {
+          const status = getStatus(stage.key);
+          return (
+            <div key={stage.key} className="flex items-center">
+              {i > 0 && (
+                <div
+                  className={`w-4 h-px mx-0.5 ${
+                    status === "waiting" ? "bg-border" : "bg-accent"
+                  }`}
+                />
+              )}
               <div
-                className={`w-6 h-px mx-1 ${
-                  status === "waiting" ? "bg-border" : "bg-accent"
+                className={`flex items-center gap-1.5 px-2 py-1 text-xs font-mono whitespace-nowrap transition-colors border ${
+                  status === "done"
+                    ? "border-dev/30 bg-dev/10 text-dev"
+                    : status === "active"
+                      ? "border-accent/30 bg-accent/10 text-accent"
+                      : "border-border bg-surface-2 text-text-dim"
                 }`}
-              />
-            )}
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors ${
-                status === "done"
-                  ? "bg-dev/15 text-dev"
-                  : status === "active"
-                    ? "bg-accent/15 text-accent animate-pulse"
-                    : "bg-surface-2 text-text-dim"
-              }`}
-            >
-              <span>
-                {status === "done" ? "\u2713" : status === "active" ? "\u25CF" : "\u25CB"}
-              </span>
-              <span>{stage.label}</span>
+                style={{ animation: status === "active" ? "magi-pulse 2s infinite" : undefined }}
+              >
+                <span className="font-bold">
+                  {status === "done" ? "DONE" : status === "active" ? "EXEC" : "WAIT"}
+                </span>
+                <span>{stage.label}</span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
