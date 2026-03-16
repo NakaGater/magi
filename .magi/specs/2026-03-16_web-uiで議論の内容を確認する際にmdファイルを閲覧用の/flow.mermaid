@@ -1,0 +1,16 @@
+graph TD
+    A[議論画面アクセス] --> B[DiscussionLive表示]
+    B --> C[StatementCard一覧表示]
+    C --> D[マークダウン記法の視覚的軽減適用]
+    D --> E{CSS適用成功?}
+    E -->|Yes| F[改善された議論内容表示]
+    E -->|No| G[デフォルト表示にフォールバック]
+    F --> H[ユーザーが議論内容を確認]
+    G --> H
+    H --> I[新しい議論が追加]
+    I --> J[リアルタイム更新]
+    J --> D
+    
+    style D fill:#e1f5fe
+    style F fill:#c8e6c9
+    style G fill:#ffecb3
