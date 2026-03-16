@@ -1,0 +1,22 @@
+id: "ユーザー認証機能を追加したい-mmsnnxvq"
+task: "ユーザー認証機能を追加したい"
+started_at: "2026-03-16T04:00:22.598Z"
+completed_at: "2026-03-16T04:05:31.551Z"
+total_tokens: 0
+total_cost: 0.0000
+stages:
+  - name: elaborate
+    rounds: 2
+    commits: 1
+  - name: specify
+    rounds: 2
+    commits: 1
+  - name: decide
+    rounds: 2
+    commits: 1
+  - name: plan
+    rounds: 1
+    commits: 1
+  - name: sync
+    rounds: 0
+    commits: 0
